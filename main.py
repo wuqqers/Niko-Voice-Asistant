@@ -15,7 +15,6 @@ import datetime
 import pyautogui
 import tkinter as tk
 from tkinter import filedialog
-from datetime import datetime
 import threading
 import time
 from PIL import Image, ImageTk
@@ -23,33 +22,28 @@ from PIL import Image, ImageTk
 load_dotenv()
 engine = pyttsx3.init()
 
-
 def listen():
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        r.adjust_for_ambient_noise(source)
-        print("Sesinizi dinliyorum...")
-        audio = r.listen(source)
+    recognizer = sr.Recognizer()
 
-    try:
-        text = r.recognize_google(audio, language="tr-TR")
-        print("Ses algılandı: " + text)
-        return text
-    except sr.UnknownValueError:
-        print("Ses anlaşılamadı.")
-        time.sleep(1)  # 1 saniye bekle
-        return listen()  # Tekrar dinlemeyi dene
-    except sr.RequestError as e:
-        print("Ses tanıma servisi çalışmıyor; {0}".format(e))
-        return ""
+    while True:
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source)
+            print("Sesinizi dinliyorum...")
+            audio = recognizer.listen(source, phrase_time_limit=3)
 
+        try:
+            text = recognizer.recognize_google(audio, language="tr-TR")
+            print("Ses algılandı: " + text)
+            return text
+        except sr.UnknownValueError:
+            print("Ses anlaşılamadı.")
+        except sr.RequestError as e:
+            print("Ses tanıma servisi çalışmıyor; {0}".format(e))
 
+        time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 
-
-
-
-
-
+if __name__ == "__main__":
+    metin = listen()
 
 def initialize_engine():
     engine.startLoop(False)
@@ -105,7 +99,8 @@ def play_spotify_track(track_name):
         devices = sp.devices()
         target_device_id = devices["devices"][0]["id"]
         sp.start_playback(uris=[track_uri], device_id=target_device_id)
-        speak("Now playing: " + track_name)
+        current_track_name = results["tracks"]["items"][0]["name"]
+        speak("Now playing: " + current_track_name)
     else:
         speak("Sorry, I couldn't find that song.")
 
@@ -114,16 +109,17 @@ def resume_song():
     current_track = sp.current_user_playing_track()
     if current_track:
         track_name = current_track["item"]["name"]
-        speak(f"Resuming song. Currently playing: {track_name}")
+        speak(f"The song continues. Currently playing: {track_name}")
     else:
-        speak("Resuming song.")
+        speak("The song continues.")
 
 def pause_song():
     sp.pause_playback()
-    speak("Song paused.")
+    speak("The song has been stopped.")
 
 def play_next_song():
     sp.next_track()
+    time.sleep(1)  # Şarkı değişikliğinin tamamlanması için bir süre bekleyin
     current_track = sp.current_user_playing_track()
     if current_track:
         track_name = current_track["item"]["name"]
@@ -133,12 +129,14 @@ def play_next_song():
 
 def play_previous_song():
     sp.previous_track()
+    time.sleep(1)  # Şarkı değişikliğinin tamamlanması için bir süre bekleyin
     current_track = sp.current_user_playing_track()
     if current_track:
         track_name = current_track["item"]["name"]
-        speak(f"Previous song. Currently playing: {track_name}")
+        speak(f"Previous song. currently playing: {track_name}")
     else:
         speak("Previous song.")
+
 
 def search_web(query):
     url = f"https://www.google.com/search?q={query}"
@@ -282,38 +280,6 @@ def show_todo():
     else:
         speak("Your to-do list is empty.")
 
-# def standby_assistant():
-#     assistant_name = load_asistant_name().lower()
-#     speak(f"{assistant_name}, I'll be waiting for your call.")
-#     listening_flag = False  # Eklenen satır: İki kez tetiklemeyi önlemek için flağ
-#     while True:
-#         command = listen().lower()
-#         if command:
-#             if assistant_name in command:
-#                 if not listening_flag:  # Eklenen satır: İki kez tetiklemeyi önlemek için kontrol
-#                     listening_flag = True
-#                     speak("I'm listening.")
-#                     run_assistant()
-#                     break
-#             else:
-#                 listening_flag = False  # Eklenen satır: İki kez tetiklemeyi önlemek için flağı sıfırla
-
-def standby_assistant():
-    assistant_name = load_asistant_name().lower()
-    while True:
-        text = listen()
-        if text:
-            if "Asistan" in text:
-                speak("How can I assist you?")
-                break
-            elif "Uyu" in text:
-                speak("Goodbye!")
-                os._exit(0)
-
-# Yardımcı fonksiyon
-def start_standby_timer():
-    timer = threading.Timer(60, standby_assistant)
-    timer.start()
 
 def load_asistant_name():
      with open('names.json', 'r') as file:
@@ -334,7 +300,6 @@ def run_assistant():
     while True:
         command = listen()
         if command:
-            start_standby_timer()
             if command.lower() == assistant_name.lower():  # Eğer komut asistanın adı ise devam et
                  continue
             if "weather" in command or "hava durumu" in command:
@@ -366,7 +331,7 @@ def run_assistant():
                 pause_song()
             elif any(keyword in command for keyword in ["play the next song", "next song", "sonraki şarkıyı çal", "sonraki şarkı"]):
                 play_next_song()
-            elif any(keyword in command for keyword in ["play the previous song", "previous song", "önceki şarkıyı çal" "önceki şarkı"]):
+            elif any(keyword in command for keyword in ["play the prev song", "prev song", "önceki şarkıyı çal", "önceki şarkı"]):
                 play_previous_song()
             elif any(greeting in command for greeting in ["hello", "hi", "hey", "selam"]):
                 speak(f"Hello, {user_name}! How can I assist you?")
@@ -388,7 +353,7 @@ def run_assistant():
             elif any(keyword in command for keyword in ["close spotify", "spotify'ı kapat"]):
                  speak("Closing Spotify.")
                  subprocess.Popen("taskkill /f /im Spotify.exe")
-            elif any(keyword in command for keyword in ["open", "aç", "open application", "uygulama aç", "çalıştr", "başlat", "run"]):
+            elif any(keyword in command for keyword in ["open", "open application", "uygulama aç", "uygulma çalıştr", "uygulama başlat", "run application"]):
                   application_name = command.replace("open", "").replace("aç", "").replace("application", "").replace("uygulama", "").replace("çalıştır", "").replace("başlat", "").replace("run", "").strip()
                   open_application(application_name)
             elif "add application" in command or "uygulama ekle" in command:
@@ -459,7 +424,6 @@ def run_assistant():
              speak("Goodbye!")
              break
         else:  # Hiç komut alınmazsa
-            start_standby_timer()
             break
 
 run_assistant()
