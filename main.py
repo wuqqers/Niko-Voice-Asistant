@@ -3,6 +3,7 @@ import webbrowser
 import subprocess
 import speech_recognition as sr
 import pyttsx3
+import psutil
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -43,7 +44,7 @@ def listen():
         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 
 if __name__ == "__main__":
-    metin = listen()
+    string = listen()
 
 def initialize_engine():
     engine.startLoop(False)
@@ -287,11 +288,23 @@ def load_asistant_name():
         assistant_name = data['assistant_name']
      return assistant_name
 
- 
+
+def is_site_opened(url):
+    try:
+        port = url.split(':')[2]
+        for conn in psutil.net_connections():
+            if conn.status == 'LISTEN' and port in str(conn.laddr):
+                return True
+        return False
+    except IndexError:
+        return False
+
+
 def run_assistant():
     initialize_engine()
     applications = load_applications()
     speak("Hi, I'm your virtual assistant.")
+    is_spotify_opened = False  # Başlangıçta Spotify'ın açık olmadığını varsayalım  
     assistant_name, user_name = load_names()
     if not assistant_name or not user_name:
         assistant_name = get_assistant_name()
@@ -312,19 +325,29 @@ def run_assistant():
                     else:
                         speak("Weather information could not be retrieved.")
                 else:
-                    speak("City information not understood. Please try again.")
+                    speak("City information not understood. Please try again.")      
             elif any(keyword in command for keyword in ["play a song", "sing a song", "play song", "şarkı çal", "müzik oynat"]):
-                if "spotify" in command:
-                    open_spotify()
-                else:
-                    url = "https://open.spotify.com/"
-                    webbrowser.open(url)
+             if "spotify" in command:
+              open_spotify()
+              is_spotify_opened = True  # Spotify açıldığında değişkeni True yapalım
+             elif is_spotify_opened:
+              speak(f"{user_name}, which song would you like me to play?")
+              track_name = listen()
+              if track_name:
+                play_spotify_track(track_name)
+              else:
+                  speak("Song information not understood. Please try again.")
+             else:
+               url = "https://open.spotify.com/"
+               if not is_site_opened(url):
+                webbrowser.open(url)
+                is_spotify_opened = True  # Spotify açıldığında değişkeni True yapalım
                 speak(f"{user_name}, which song would you like me to play?")
                 track_name = listen()
                 if track_name:
-                    play_spotify_track(track_name)
+                 play_spotify_track(track_name)
                 else:
-                    speak("Song information not understood. Please try again.")
+                 speak("Song information not understood. Please try again.")
             elif any(keyword in command for keyword in ["resume", "resume music", "şarkıyı devam ettir", "devam ettir", "müziği devam ettir"]):
                 resume_song()
             elif any(keyword in command for keyword in ["pause", "pause music", "şarkıyı durdur", "duraklat", "müziği durdur"]):
@@ -384,7 +407,7 @@ def run_assistant():
                 speak("Closing Notepad.")
                 subprocess.Popen("taskkill /f /im notepad.exe")
             elif any(keyword in command for keyword in ["search", "find", "ara"]):
-                search_web()
+                search_web(string)
             elif any(keyword in command for keyword in ["go to", "go", "git"]):
                 website = command.replace("go to", "").replace("go", "").replace("git", "").strip()
                 open_website(website)
