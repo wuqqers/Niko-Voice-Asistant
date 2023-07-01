@@ -185,8 +185,11 @@ def open_website(website=None):
     webbrowser.open(url)
     speak("Opening " + website)
 
+def what_time():
+    speak(speak(f"The time is {datetime.datetime.now().strftime('%H:%M')}."))
 
-
+def what_today():
+    speak(f"Today is {datetime.datetime.now().strftime('%A')}.")
 
 def set_alarm():
     speak("What time would you like to set the alarm?")
@@ -380,7 +383,8 @@ def execute_command(command):
         "uygulame ekle": add_application,
         "bilgisayarı yeniden başlat" : restart,
         "oturumu kapat" : log_out,
-        "bilgisayarı uyut" : sleep,
+        "saat kaç" : what_time,
+        "hangi gündeyiz" : what_today,
         "yapılacaklar listesine ekle" : todo,
         "yapılacaklar listesini göster" : show_todo,
          "sekmeyi kapat": close_tab,
