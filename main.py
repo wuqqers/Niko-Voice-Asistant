@@ -20,6 +20,7 @@ import threading
 import time
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import ctypes
+import pygetwindow as gw
 current_date = datetime.datetime.now().date()
 current_day = current_date.strftime("%A")  # Haftanın gününü almak için
 current_month = current_date.strftime("%B")  # Ayın adını almak için
@@ -182,7 +183,7 @@ def listen():
 
 
 # Spotify yetkilendirme ayarları
-scope = "user-read-playback-state,user-modify-playback-state,playlist-read-private"
+scope = "user-read-playback-state,user-modify-playback-state"
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 is_spotify_opened = False  # global değişken olarak tanımlanması
 is_playing = False
@@ -425,19 +426,66 @@ def close_application():
     speak("Which application would you like to close?")
     application_name = listen()
 
-    for proc in psutil.process_iter(['name']):
-        try:
-            process_name = proc.name().lower()
-            if application_name.lower() in process_name or application_name.lower() + '.exe' in process_name:
-                speak(f"Closing {application_name}.")
-                proc.terminate()
-                return
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            continue
+    try:
+        subprocess.run(["taskkill", "/F", "/IM", application_name + ".exe"], check=True)
+        speak(f"Successfully closed {application_name}.")
+    except subprocess.CalledProcessError:
+        speak(f"Sorry, I couldn't find the {application_name} application running.")
 
-    speak(f"Sorry, I couldn't find the {application_name} application running.")
+def play_song():
+    speak("From which platform do you want to play the song, YouTube or Spotify?")
+    platform = listen().lower()
+
+    if platform == "spotify":
+        play_spotify_track()
+    elif platform == "youtube":
+        play_youtube()
+    else:
+        speak("Sorry, I didn't understand the platform. Please try again.")
 
 
+def play_youtube(track_name=None):
+    if not track_name:
+        speak("Which song would you like me to play?")
+        track_name = listen()
+
+    if track_name:
+        load_dotenv()  # Load environment variables from .env file
+        api_key = os.getenv("YOUTUBE_API_KEY")
+        
+        if api_key:
+            search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q={track_name.replace(' ', '+')}&key={api_key}"
+            response = requests.get(search_url)
+            json_data = response.json()
+
+            if "items" in json_data and len(json_data["items"]) > 0:
+                video_id = json_data["items"][0]["id"]["videoId"]
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                webbrowser.open(video_url)
+                speak("Playing song from YouTube: " + track_name)
+            else:
+                speak("Sorry, I couldn't find any matching videos on YouTube.")
+        else:
+            speak("No YouTube API key found. Please make sure to set your API key in the .env file.")
+
+def get_weather(city=None):
+    if not city:
+        speak("Which city's weather would you like to know?")
+        city = listen()
+
+    load_dotenv()  # Load environment variables from .env file
+    api_key = os.getenv("WEATHER_API_KEY")
+    url = f"https://api.weatherapi.com/v1/current.json?key={api_key}&q={city}&lang=en&aqi=no"
+    response = requests.get(url)
+    weather_data = response.json()
+
+    if "current" in weather_data:
+        weather_description = weather_data["current"]["condition"]["text"]
+        temperature = weather_data["current"]["temp_c"]
+        speak(f"Weather for {city}: {weather_description}, temperature: {temperature} degrees")
+    else:
+        speak("Sorry, I couldn't retrieve the weather information for that city.")
+        
 def take_screenshot():
     root = tk.Tk()
     root.withdraw()
@@ -522,7 +570,7 @@ def show_todo():
 def execute_command(command):
     global is_spotify_opened  # is_spotify_opened değişkenini global olarak kullanmak için eklenen satır
     commands = {
-        "şarkı çal": play_spotify_track,
+        "şarkı çal": play_song,
         "sonraki şarkı": play_next_song,
         "önceki şarkı": play_previous_song,
         "şarkıyı durdur": pause_song,
