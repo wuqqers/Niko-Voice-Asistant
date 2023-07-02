@@ -182,7 +182,7 @@ def listen():
 
 
 # Spotify yetkilendirme ayarları
-scope = "user-library-read user-modify-playback-state playlist-read-private streaming"
+scope = "user-read-playback-state,user-modify-playback-state,playlist-read-private"
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 is_spotify_opened = False  # global değişken olarak tanımlanması
 is_playing = False
