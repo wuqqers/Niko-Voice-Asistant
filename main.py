@@ -331,9 +331,6 @@ def open_website(website=None):
     webbrowser.open(url)
     speak("Opening " + website)
 
-def what_time():
-    speak(speak(f"The time is {datetime.datetime.now().strftime('%H:%M')}."))
-
 def what_today():
     speak(f"Today is {datetime.datetime.now().strftime('%A')}.")
 
@@ -400,6 +397,9 @@ def open_spotify():
     subprocess.Popen("C:\\Users\\omere\\AppData\\Roaming\\Spotify\\Spotify.exe")
 
 
+
+def what_time_is_it():
+    speak("The time is " + datetime.datetime.now().strftime("%H:%M"))
 def open_application():
     speak("Which application would you like to open?")
     application_name = listen()
@@ -533,7 +533,7 @@ def execute_command(command):
         "uygulame ekle": add_application,
         "bilgisayarı yeniden başlat" : restart,
         "oturumu kapat" : log_out,
-        "saat kaç" : what_time,
+        "saat kaç" : what_time_is_it,
         "sesi arttır" : volume_up,
          "sesi azalt" : volume_down,
         "hangi gündeyiz" : what_today,
