@@ -18,7 +18,8 @@ import tkinter as tk
 from tkinter import filedialog
 import threading
 import time
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFont
+import ctypes
 current_date = datetime.datetime.now().date()
 current_day = current_date.strftime("%A")  # Haftanın gününü almak için
 current_month = current_date.strftime("%B")  # Ayın adını almak için
@@ -26,6 +27,51 @@ current_year = current_date.year  # Yıl bilgisini almak için
 # .env dosyasından çevre değişkenlerini yükle
 load_dotenv()
 engine = pyttsx3.init()
+def show_logo():
+    # Niko yazısı ve kalp ikonu oluşturuluyor
+    logo = [
+        "NNNNNNNN        NNNNNNNNIIIIIIIIIIIKKKKKKKK    KKKKKKK      OOOOOOOOO000",
+        "N:::::::N       N::::::NI::::::::IK:::::::K    K:::::K    OO:::::::::OO0",
+        "N::::::::N      N::::::NI::::::::IK:::::::K    K:::::K  OO:::::::::::::OO",
+        "N:::::::::N     N::::::NII::::::IIKK::::::K    K:::::K O:::::::OOO:::::0O",
+        "N::::::::::N    N::::::N  I::::I    K:::::K K:::::K  O::::::O   O:::::::00",
+        "N:::::::::::N   N::::::N  I::::I    K::::::K:::::K   O:::::O     O:::::OOO",
+        "N:::::::N::::N  N::::::N  I::::I    K:::::::::::K    O:::::O     O:::::OO",
+        "N::::::N N::::N N::::::N  I::::I    K:::::::::::K    O:::::O     O:::::OO",
+        "N::::::N  N::::N:::::::N  I::::I    K::::::K:::::K   O:::::O     O:::::O0",
+        "N::::::N   N:::::::::::N  I::::I    K:::::K K:::::K  O::::::O   O:::::::O0",
+        "N::::::N    N::::::::::N  I::::I    KK::::::K  K:::::KO:::::::OOO:::::::O0",
+        "N::::::N     N:::::::::N  I::::I      K:::::::K   K:::::KO:::::::::::::OO",
+        "N::::::N      N::::::::NII::::::II    K:::::::K    K:::::KO:::::::::OOOO",
+        "N::::::N       N:::::::NI::::::::I    K:::::::K    K:::::K OO::::::::0OO",
+        "NNNNNNNN        NNNNNNNNIIIIIIIIII    KKKKKKKKK    KKKKKKK   OOOOOOOOO",
+    ]
+
+
+    heart = [
+        "     ♥♥♥♥     ♥♥♥♥     ",
+        "   ♥♥     ♥♥ ♥♥     ♥♥   ",
+        " ♥♥         ♥♥         ♥♥ ",
+        " ♥♥                   ♥♥ ",
+        "   ♥♥               ♥♥   ",
+        "     ♥♥           ♥♥     ",
+        "       ♥♥       ♥♥       ",
+        "         ♥♥   ♥♥         ",
+        "           ♥♥♥           "
+    ]
+
+    # Niko yazısı ve kalp ikonunu ekrana yazdırma
+    for line in logo:
+        print(line)
+    
+    print("\n")  # Boş bir satır bırakma
+    
+    for line in heart:
+        print(line)
+
+    # "Niko Voice Asistan Açılıyor" yazısını ekrana yazdırma
+    print("\nNiko Voice Asistan Açılıyor...\n")
+
 
 def listen():
     recognizer = sr.Recognizer()
@@ -47,7 +93,9 @@ def listen():
 
         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 if __name__ == "__main__":
-    text = listen()
+    show_logo()  # Logo gösterimini yapın
+    time.sleep(3)  # Logonun gösterim süresini bekleyin
+    text = listen()  # Kullanıcıdan giriş alın
 
 def initialize_engine():
     engine.startLoop(False)
@@ -166,8 +214,14 @@ def play_previous_song():
         speak(f"Previous song. currently playing: {track_name}")
     else:
         speak("Previous song.")
+ 
+def volume_up():
+    for _ in range(5):
+        pyautogui.press('volumeup')
 
-
+def volume_down():
+ for _ in range(5):
+    pyautogui.hotkey('volumedown')
 def search_web():
     speak("What would you like to search for?")
     query = listen()
@@ -190,6 +244,8 @@ def what_time():
 
 def what_today():
     speak(f"Today is {datetime.datetime.now().strftime('%A')}.")
+
+
 
 def set_alarm():
     speak("What time would you like to set the alarm?")
@@ -384,6 +440,8 @@ def execute_command(command):
         "bilgisayarı yeniden başlat" : restart,
         "oturumu kapat" : log_out,
         "saat kaç" : what_time,
+        "sesi arttır" : volume_up,
+         "sesi azalt" : volume_down,
         "hangi gündeyiz" : what_today,
         "yapılacaklar listesine ekle" : todo,
         "yapılacaklar listesini göster" : show_todo,
