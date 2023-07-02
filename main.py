@@ -27,6 +27,17 @@ current_year = current_date.year  # Yıl bilgisini almak için
 # .env dosyasından çevre değişkenlerini yükle
 load_dotenv()
 engine = pyttsx3.init()
+# Başlık metnini ayarlamak için SetConsoleTitle fonksiyonunu kullanma
+def set_cmd_title(title):
+    ctypes.windll.kernel32.SetConsoleTitleW(title)
+
+# İkonu değiştirmek için SetConsoleIcon fonksiyonunu kullanma
+def set_cmd_icon(icon_path):
+    ctypes.windll.kernel32.SetConsoleIcon(icon_path)
+
+# Başlık ve ikonu ayarlama
+set_cmd_title("Niko Voice Asistant")
+set_cmd_icon("logo.ico")
 def show_logo():
     # Niko yazısı ve kalp ikonu oluşturuluyor
     logo = [
@@ -60,6 +71,9 @@ def show_logo():
         "           ♥♥♥           "
     ]
 
+        # "Niko Voice Asistan Açılıyor" yazısını ekrana yazdırma
+    print("\nNiko Voice Asistan Açılıyor...\n")
+
     # Niko yazısı ve kalp ikonunu ekrana yazdırma
     for line in logo:
         print(line)
@@ -69,10 +83,82 @@ def show_logo():
     for line in heart:
         print(line)
 
-    # "Niko Voice Asistan Açılıyor" yazısını ekrana yazdırma
-    print("\nNiko Voice Asistan Açılıyor...\n")
+def initialize_engine():
+    engine.startLoop(False)
+    engine.iterate()
+    engine.endLoop()
+
+def speak(text):
+    print(text)
+    engine.say(text)
+    engine.runAndWait()
+
+def load_asistant_name():
+     with open('names.json', 'r') as file:
+        data = json.load(file)
+        assistant_name = data['assistant_name']
+     return assistant_name
+    
+def unknown_command():
+    print("Bilinmeyen komut!")
+
+def is_site_opened(url):
+    try:
+        port = url.split(':')[2]
+        for conn in psutil.net_connections():
+            if conn.status == 'LISTEN' and port in str(conn.laddr):
+                return True
+        return False
+    except IndexError:
+        return False
+
+def get_assistant_name():
+    assistant_name = input("What should be my name? ")
+    return assistant_name
 
 
+def get_user_name():
+    try:
+        with open("names.json", "r") as file:
+            data = json.load(file)
+            user_name = data.get("user_name")
+            if user_name:
+                return user_name
+    except FileNotFoundError:
+        pass
+    
+    user_name = input("What is your name?")
+    save_names(user_name=user_name)
+    return user_name
+
+def save_names(assistant_name=None, user_name=None):
+    data = {}
+    if assistant_name:
+        data["assistant_name"] = assistant_name
+    if user_name:
+        data["user_name"] = user_name
+    
+    with open("names.json", "w") as file:
+        json.dump(data, file)
+def load_names():
+    try:
+        with open("names.json", "r") as file:
+            data = json.load(file)
+            return data.get("assistant_name"), data.get("user_name")
+    except FileNotFoundError:
+        return None, None
+
+def load_applications():
+    try:
+        with open('applications.json', 'r') as file:
+            applications = json.load(file)
+            return applications
+    except FileNotFoundError:
+        return {}
+
+def save_applications(applications):
+    with open('applications.json', 'w') as file:
+        json.dump(applications, file)    
 def listen():
     recognizer = sr.Recognizer()
 
@@ -92,64 +178,70 @@ def listen():
             print("Ses tanıma servisi çalışmıyor; {0}".format(e))
 
         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
-if __name__ == "__main__":
-    show_logo()  # Logo gösterimini yapın
-    time.sleep(3)  # Logonun gösterim süresini bekleyin
-    text = listen()  # Kullanıcıdan giriş alın
 
-def initialize_engine():
-    engine.startLoop(False)
-    engine.iterate()
-    engine.endLoop()
 
-def speak(text):
-    print(text)
-    engine.say(text)
-    engine.runAndWait()
-
-def get_assistant_name():
-    assistant_name = input("What should be my name? ")
-    return assistant_name
-
-def get_user_name():
-    user_name = input("What's your name? ")
-    return user_name
-
-def save_names(assistant_name, user_name):
-    data = {
-        "assistant_name": assistant_name,
-        "user_name": user_name
-    }
-    with open("names.json", "w") as file:
-        json.dump(data, file)
-
-def load_names():
-    try:
-        with open("names.json", "r") as file:
-            data = json.load(file)
-            return data.get("assistant_name"), data.get("user_name")
-    except FileNotFoundError:
-        return None, None
-
-def load_applications():
-    try:
-        with open('applications.json', 'r') as file:
-            applications = json.load(file)
-            return applications
-    except FileNotFoundError:
-        return {}
-   
 
 # Spotify yetkilendirme ayarları
-scope = "user-read-playback-state,user-modify-playback-state"
+scope = "user-library-read user-modify-playback-state playlist-read-private streaming"
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 is_spotify_opened = False  # global değişken olarak tanımlanması
+is_playing = False
+def play_playlist(playlist_index=None):
+   
+    playlists = sp.current_user_playlists()["items"]
+    num_playlists = len(playlists)
+    global is_spotify_opened
+    global is_playing
+    load_names()
+    user_name = get_user_name()
+    if is_playing is True:
+        pause_song()
+        is_playing = False
+    if is_spotify_opened:
+        if playlist_index is None:
+            speak(f"{user_name}, which playlist would you like me to play?")
+            playlist_index = listen()
+            if playlist_index:
+                playlist_index = int(playlist_index) - 1  # Convert to integer here
+                if playlist_index < 0 or playlist_index >= num_playlists:
+                    speak("Invalid playlist index. Please try again.")
+                else:
+                    # Pause the current playback if any
+                    sp.pause_playback()
+
+                    playlist_id = playlists[playlist_index]["id"]
+                    sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
+                    is_playing = True
+    else:
+        url = "https://open.spotify.com/"
+        if not is_site_opened(url):
+            webbrowser.open(url)
+            is_spotify_opened = True
+            if playlist_index is None:
+                speak(f"{user_name}, which playlist would you like me to play?")
+                playlist_index = listen()
+                if playlist_index:
+                    playlist_index = int(playlist_index) - 1  # Convert to integer here
+                    if playlist_index < 0 or playlist_index >= num_playlists:
+                        speak("Invalid playlist index. Please try again.")
+                    else:
+                        # Pause the current playback if any
+                        sp.pause_playback()
+
+                        playlist_id = playlists[playlist_index]["id"]
+                        sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
+                        is_playing = True
+
+
+
 def play_spotify_track(track_name=None):
     global is_spotify_opened
+    load_names()
+    user_name = get_user_name()
 
     if is_spotify_opened:
         if not track_name:
-            speak("Hangi şarkıyı çalmamı istersiniz?")
+            speak( user_name + "," "Which song would you like me to play?")
             track_name = listen()
     else:
         url = "https://open.spotify.com/"
@@ -157,7 +249,7 @@ def play_spotify_track(track_name=None):
             webbrowser.open(url)
             is_spotify_opened = True
             if not track_name:
-                speak("Hangi şarkıyı çalmamı istersiniz?")
+                speak( user_name + ","  "Which song would you like me to play?")
                 track_name = listen()
                 if track_name:
                     play_spotify_track(track_name)  # Şarkıyı çalma komutunu tekrar çağır
@@ -312,6 +404,7 @@ def open_application():
     speak("Which application would you like to open?")
     application_name = listen()
     applications = load_applications()
+
     if application_name in applications:
         application_path = applications[application_name]
         speak(f"Opening {application_name}.")
@@ -319,11 +412,30 @@ def open_application():
     else:
         speak(f"Sorry, I couldn't find the {application_name} application. Please provide the location of the application.")
         application_path = filedialog.askopenfilename(title="Select Application")
+
         if os.path.exists(application_path):
             speak(f"Opening {application_name}.")
             subprocess.Popen(application_path)
+            applications[application_name] = application_path
+            save_applications(applications)
         else:
             speak("Sorry, I couldn't find the application at the specified location.")
+
+def close_application():
+    speak("Which application would you like to close?")
+    application_name = listen()
+
+    for proc in psutil.process_iter(['name']):
+        try:
+            process_name = proc.name().lower()
+            if application_name.lower() in process_name or application_name.lower() + '.exe' in process_name:
+                speak(f"Closing {application_name}.")
+                proc.terminate()
+                return
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+    speak(f"Sorry, I couldn't find the {application_name} application running.")
 
 
 def take_screenshot():
@@ -405,26 +517,8 @@ def show_todo():
         speak("Your to-do list is empty.")
 
 
-def load_asistant_name():
-     with open('names.json', 'r') as file:
-        data = json.load(file)
-        assistant_name = data['assistant_name']
-     return assistant_name
-    
-def unknown_command():
-    print("Bilinmeyen komut!")
 
-def is_site_opened(url):
-    try:
-        port = url.split(':')[2]
-        for conn in psutil.net_connections():
-            if conn.status == 'LISTEN' and port in str(conn.laddr):
-                return True
-        return False
-    except IndexError:
-        return False
-
-
+ 
 def execute_command(command):
     global is_spotify_opened  # is_spotify_opened değişkenini global olarak kullanmak için eklenen satır
     commands = {
@@ -450,6 +544,8 @@ def execute_command(command):
         "şarkıyı devam ettir": resume_song,
         "web'de ara": search_web,
         "uygulama aç": open_application,
+        "uygulama kapat": close_application,
+        "oynatma listemi çal": play_playlist,
         "bilgisayarı kapat" : shutdown,
         # diğer komutlar burada eklenebilir
     }
@@ -460,11 +556,15 @@ def execute_command(command):
     else:
         unknown_command()
 
-
+ 
 def run_assistant():
     initialize_engine()
     applications = load_applications()
-    speak("Hi, I'm your virtual assistant.")
+    user_name = get_user_name()
+    current_time = datetime.datetime.now().strftime('%H:%M')
+    day = datetime.datetime.now().strftime('%A')
+    speak(f"Hi, {user_name}! Today {day}. Time is {current_time}, How Can I Help You?")
+
     assistant_name, user_name = load_names()
     if not assistant_name or not user_name:
         assistant_name = get_assistant_name()
@@ -474,5 +574,12 @@ def run_assistant():
         command = listen().lower()
         print("Alınan komut:", command)  # Sorunları ayıklama amacıyla alınan komutu yazdırma
         execute_command(command)
+
+
+
+if __name__ == "__main__":
+    show_logo()  # Logo gösterimini yapın
+    time.sleep(3)  # Logonun gösterim süresini bekleyin
+    run_assistant()
 
 run_assistant()
