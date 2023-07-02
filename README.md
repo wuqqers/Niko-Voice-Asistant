@@ -1,6 +1,7 @@
 ### Changelog
 - I optimized the code by getting rid of Elif code blocks
 - Added Spotify Playlist function
+- Added Play music from Youtube function
 - I added Greeting Message and giving information about day
 # Niko Voice Asistant
 
@@ -9,7 +10,7 @@
 - you can help me to develop the project by forking
 
 # What is Next?
-- I want add play music from Youtube function
+- ~~I want add play music from Youtube function~~
 - I want GUI For Niko
 - And much more function
 
