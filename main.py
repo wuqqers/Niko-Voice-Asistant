@@ -114,8 +114,14 @@ def is_site_opened(url):
         return False
 
 def get_assistant_name():
-    assistant_name = input("What should be my name? ")
-    return assistant_name
+    try:
+        with open("names.json", "r") as file:
+            data = json.load(file)
+            assistant_name = data.get("assistant_name")
+            if assistant_name:
+                return assistant_name
+    except FileNotFoundError:
+        assistant_name = input("What should be my name? ")
 
 
 def get_user_name():
@@ -160,26 +166,52 @@ def load_applications():
 def save_applications(applications):
     with open('applications.json', 'w') as file:
         json.dump(applications, file)    
+# def listen():
+#     recognizer = sr.Recognizer()
+
+#     while True:
+#         with sr.Microphone() as source:
+#             recognizer.adjust_for_ambient_noise(source)
+#             print("Sesinizi dinliyorum...")
+#             audio = recognizer.listen(source, phrase_time_limit=6)
+
+#         try:
+#             text = recognizer.recognize_google(audio, language="tr-TR")
+#             print("Ses algılandı: " + text)
+#             return text
+#         except sr.UnknownValueError:
+#             print("Ses anlaşılamadı.")
+#         except sr.RequestError as e:
+#             print("Ses tanıma servisi çalışmıyor; {0}".format(e))
+
+#         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
+
+import speech_recognition as sr
+
 def listen():
     recognizer = sr.Recognizer()
+    audio_duration = 6  # Maximum duration for listening (in seconds)
 
-    while True:
-        with sr.Microphone() as source:
-            recognizer.adjust_for_ambient_noise(source)
-            print("Sesinizi dinliyorum...")
-            audio = recognizer.listen(source, phrase_time_limit=3)
+    with sr.Microphone() as source:
+        recognizer.adjust_for_ambient_noise(source)
 
-        try:
-            text = recognizer.recognize_google(audio, language="tr-TR")
-            print("Ses algılandı: " + text)
-            return text
-        except sr.UnknownValueError:
-            print("Ses anlaşılamadı.")
-        except sr.RequestError as e:
-            print("Ses tanıma servisi çalışmıyor; {0}".format(e))
+        # Start dynamic energy adjustment
+        recognizer.dynamic_energy_adjustment_ratio = 1.5  # Increase if ambient noise is high
+        recognizer.dynamic_energy_adjustment_damping = 0.15
 
-        time.sleep(1)  # 1 saniye bekle ve tekrar dinle
+        print("Listening...")
+        audio = recognizer.listen(source, phrase_time_limit=audio_duration)
 
+    try:
+        text = recognizer.recognize_google(audio, language="tr-TR")
+        print("Speech detected: " + text)
+        return text
+    except sr.UnknownValueError:
+        print("Speech not recognized.")
+    except sr.RequestError as e:
+        print("Speech recognition service is not available; {0}".format(e))
+
+    return ""
 
 
 # Spotify yetkilendirme ayarları
@@ -188,7 +220,6 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 is_spotify_opened = False  # global değişken olarak tanımlanması
 is_playing = False
 def play_playlist(playlist_index=None):
-   
     playlists = sp.current_user_playlists()["items"]
     num_playlists = len(playlists)
     global is_spotify_opened
@@ -203,25 +234,7 @@ def play_playlist(playlist_index=None):
             speak(f"{user_name}, which playlist would you like me to play?")
             playlist_index = listen()
             if playlist_index:
-                playlist_index = int(playlist_index) - 1  # Convert to integer here
-                if playlist_index < 0 or playlist_index >= num_playlists:
-                    speak("Invalid playlist index. Please try again.")
-                else:
-                    # Pause the current playback if any
-                    sp.pause_playback()
-
-                    playlist_id = playlists[playlist_index]["id"]
-                    sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
-                    is_playing = True
-    else:
-        url = "https://open.spotify.com/"
-        if not is_site_opened(url):
-            webbrowser.open(url)
-            is_spotify_opened = True
-            if playlist_index is None:
-                speak(f"{user_name}, which playlist would you like me to play?")
-                playlist_index = listen()
-                if playlist_index:
+                try:
                     playlist_index = int(playlist_index) - 1  # Convert to integer here
                     if playlist_index < 0 or playlist_index >= num_playlists:
                         speak("Invalid playlist index. Please try again.")
@@ -232,8 +245,32 @@ def play_playlist(playlist_index=None):
                         playlist_id = playlists[playlist_index]["id"]
                         sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
                         is_playing = True
+                except ValueError:
+                    speak("Invalid input. Please provide a valid playlist index.")
+                    playlist_index = None
+    else:
+        url = "https://open.spotify.com/"
+        if not is_site_opened(url):
+            webbrowser.open(url)
+            is_spotify_opened = True
+            if playlist_index is None:
+                speak(f"{user_name}, which playlist would you like me to play?")
+                playlist_index = listen()
+                if playlist_index:
+                    try:
+                        playlist_index = int(playlist_index) - 1  # Convert to integer here
+                        if playlist_index < 0 or playlist_index >= num_playlists:
+                            speak("Invalid playlist index. Please try again.")
+                        else:
+                            # Pause the current playback if any
+                            sp.pause_playback()
 
-
+                            playlist_id = playlists[playlist_index]["id"]
+                            sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
+                            is_playing = True
+                    except ValueError:
+                        speak("Invalid input. Please provide a valid playlist index.")
+                        playlist_index = listen()
 
 def play_spotify_track(track_name=None):
     global is_spotify_opened
@@ -242,7 +279,7 @@ def play_spotify_track(track_name=None):
 
     if is_spotify_opened:
         if not track_name:
-            speak( user_name + "," "Which song would you like me to play?")
+            speak(user_name + ", which song would you like me to play?")
             track_name = listen()
     else:
         url = "https://open.spotify.com/"
@@ -250,11 +287,11 @@ def play_spotify_track(track_name=None):
             webbrowser.open(url)
             is_spotify_opened = True
             if not track_name:
-                speak( user_name + ","  "Which song would you like me to play?")
+                speak(user_name + ", which song would you like me to play?")
                 track_name = listen()
                 if track_name:
-                    play_spotify_track(track_name)  # Şarkıyı çalma komutunu tekrar çağır
-                    return  # Geri kalan kodu çalıştırmayı durdur
+                    play_spotify_track(track_name)
+                    return
 
     if track_name:
         results = sp.search(q=track_name, limit=1, type="track")
@@ -267,13 +304,13 @@ def play_spotify_track(track_name=None):
                     target_device_id = device["id"]
                     break
             if target_device_id:
-                sp.start_playback(uris=[track_uri], device_id=target_device_id)
+                sp.start_playback(device_id=target_device_id, uris=[track_uri])
                 current_track_name = results["tracks"]["items"][0]["name"]
-                speak("Şu anda çalınıyor: " + current_track_name)
+                speak("Now playing: " + current_track_name)
             else:
-                speak("Çalınacak bir cihaz bulunamadı.")
+                speak("No available devices to play.")
         else:
-            speak("Üzgünüm, o şarkıyı bulamadım.")
+            speak("Sorry, I couldn't find that song.")
 
 
 def resume_song():
@@ -337,7 +374,21 @@ def what_today():
 
 
 
+def load_alarms():
+    try:
+        with open("alarms.json", "r") as file:
+            alarms = json.load(file)
+            return alarms
+    except FileNotFoundError:
+        return []
+
+def save_alarms(alarms):
+    with open("alarms.json", "w") as file:
+        json.dump(alarms, file)
+
 def set_alarm():
+    alarms = load_alarms()
+
     speak("What time would you like to set the alarm?")
     time_input = listen()
     speak(f"Alarm set for {time_input}.")
@@ -351,6 +402,13 @@ def set_alarm():
             speak("The specified time has already passed. Please enter a future time.")
             return
 
+        alarm = {
+            "time": str(alarm_time),
+            "status": "active"
+        }
+        alarms.append(alarm)
+        save_alarms(alarms)
+
         while True:
             current_time = datetime.datetime.now().time()
             if current_time >= alarm_time:
@@ -362,6 +420,8 @@ def set_alarm():
             command = listen().lower()
             if "stop" in command.lower() or "cancel" in command.lower():
                 speak("Alarm canceled.")
+                alarms.remove(alarm)
+                save_alarms(alarms)
                 break
 
             execute_command(command)
@@ -369,7 +429,6 @@ def set_alarm():
     except ValueError:
         speak("Invalid time format. Please try again.")
         return
-
 
 
 
@@ -564,17 +623,23 @@ def show_todo():
     else:
         speak("Your to-do list is empty.")
 
+def HeyAssistant():
+    user_name = get_user_name()
+    assistant_name = get_assistant_name()
+    speak(f"Hi, I'm {assistant_name}. How can I assist you, {user_name}?")
 
 
  
 def execute_command(command):
     global is_spotify_opened  # is_spotify_opened değişkenini global olarak kullanmak için eklenen satır
+    asistant_name = get_assistant_name()
     commands = {
         "şarkı çal": play_song,
         "sonraki şarkı": play_next_song,
         "önceki şarkı": play_previous_song,
         "şarkıyı durdur": pause_song,
         "hava durumu": get_weather,
+        f"{asistant_name}" : HeyAssistant,
         "web siteyi aç": open_website,
         "alarm kur": set_alarm,
         "ekran görüntüsü al": take_screenshot,
