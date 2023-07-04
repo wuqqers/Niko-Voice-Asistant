@@ -186,7 +186,6 @@ def save_applications(applications):
 
 #         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 
-import speech_recognition as sr
 
 def listen():
     recognizer = sr.Recognizer()
