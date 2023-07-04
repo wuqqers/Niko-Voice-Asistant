@@ -1,3 +1,5 @@
+### Bugs?
+- Spotify Sometimes won't work perfect because of spotify api 
 ### Changelog
 - I optimized the code by getting rid of Elif code blocks
 - Added Spotify Playlist function
