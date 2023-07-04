@@ -1,6 +1,10 @@
 ### Bugs?
 - Spotify Sometimes won't work perfect because of spotify api 
-### Changelog
+### Changelog v0.2
+- Added small code block that will respond to you when you call the Assistant by name.
+- Updated listen function slightly more optimized
+- The Alarms Function has been updated and now it will remember if there is an alarm when you turn the assistant off and on.
+### Changelog v0.1
 - I optimized the code by getting rid of Elif code blocks
 - Added Spotify Playlist function
 - Added Play music from Youtube function
