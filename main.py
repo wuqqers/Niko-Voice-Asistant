@@ -155,13 +155,6 @@ def load_names():
     except FileNotFoundError:
         return None, None
 
-def load_applications():
-    try:
-        with open('applications.json', 'r') as file:
-            applications = json.load(file)
-            return applications
-    except FileNotFoundError:
-        return {}
 
 def save_applications(applications):
     with open('applications.json', 'w') as file:
@@ -189,12 +182,11 @@ def save_applications(applications):
 
 def listen():
     recognizer = sr.Recognizer()
-    audio_duration = 6  # Maximum duration for listening (in seconds)
+    audio_duration = 3  # Initial maximum duration for listening (in seconds)
+    text = ""
 
     with sr.Microphone() as source:
         recognizer.adjust_for_ambient_noise(source)
-
-        # Start dynamic energy adjustment
         recognizer.dynamic_energy_adjustment_ratio = 1.5  # Increase if ambient noise is high
         recognizer.dynamic_energy_adjustment_damping = 0.15
 
@@ -210,7 +202,15 @@ def listen():
     except sr.RequestError as e:
         print("Speech recognition service is not available; {0}".format(e))
 
+    # If the user's sentence is not completed, increase the duration and listen again
+    if len(text) == 0 or len(text.split()) > 1:
+        if audio_duration < 9:
+            audio_duration += 1
+            return listen()
+
     return ""
+
+
 
 
 # Spotify yetkilendirme ayarları
@@ -459,18 +459,20 @@ def open_spotify():
 
 def what_time_is_it():
     speak("The time is " + datetime.datetime.now().strftime("%H:%M"))
-def open_application():
-    speak("Which application would you like to open?")
-    application_name = listen()
-    applications = load_applications()
 
+
+
+def open_application(application_name):
+    applications = load_applications()
+    application_name = application_name.replace("'u", "").replace("'ı", "").strip()  # Tek tırnak içindeki 'u' ve 'ı' karakterlerini çıkaralım
     if application_name in applications:
         application_path = applications[application_name]
         speak(f"Opening {application_name}.")
         subprocess.Popen(application_path)
     else:
-        speak(f"Sorry, I couldn't find the {application_name} application. Please provide the location of the application.")
-        application_path = filedialog.askopenfilename(title="Select Application")
+        speak(f"Sorry, I couldn't find the {application_name} application.")
+        speak(f"Please provide the location of the {application_name} application.")
+        application_path = filedialog.askopenfilename(title=f"Select {application_name} Application")
 
         if os.path.exists(application_path):
             speak(f"Opening {application_name}.")
@@ -478,7 +480,31 @@ def open_application():
             applications[application_name] = application_path
             save_applications(applications)
         else:
-            speak("Sorry, I couldn't find the application at the specified location.")
+            speak("Sorry, I couldn't find the application.")
+
+
+
+
+def search_application(application_name):
+    try:
+        with open('applications.json', 'r') as file:
+            applications = json.load(file)
+            return applications.get(application_name)
+    except FileNotFoundError:
+        return None
+
+def load_applications():
+    try:
+        with open('applications.json', 'r') as file:
+            applications = json.load(file)
+            return applications
+    except FileNotFoundError:
+        return {}
+
+
+
+# Other functions omitted for brevity
+
 
 def close_application():
     speak("Which application would you like to close?")
@@ -633,41 +659,126 @@ def execute_command(command):
     global is_spotify_opened  # is_spotify_opened değişkenini global olarak kullanmak için eklenen satır
     asistant_name = get_assistant_name()
     commands = {
-        "şarkı çal": play_song,
-        "sonraki şarkı": play_next_song,
-        "önceki şarkı": play_previous_song,
-        "şarkıyı durdur": pause_song,
-        "hava durumu": get_weather,
-        f"{asistant_name}" : HeyAssistant,
-        "web siteyi aç": open_website,
-        "alarm kur": set_alarm,
-        "ekran görüntüsü al": take_screenshot,
-        "uygulame ekle": add_application,
-        "bilgisayarı yeniden başlat" : restart,
-        "oturumu kapat" : log_out,
-        "saat kaç" : what_time_is_it,
-        "sesi arttır" : volume_up,
-         "sesi azalt" : volume_down,
-        "hangi gündeyiz" : what_today,
-        "yapılacaklar listesine ekle" : todo,
-        "yapılacaklar listesini göster" : show_todo,
-         "sekmeyi kapat": close_tab,
-         "instagram'ı aç": open_instagram,
-        "şarkıyı devam ettir": resume_song,
-        "web'de ara": search_web,
-        "uygulama aç": open_application,
-        "uygulama kapat": close_application,
-        "oynatma listemi çal": play_playlist,
-        "bilgisayarı kapat" : shutdown,
-        # diğer komutlar burada eklenebilir
-    }
+    "şarkı çal": play_song,
+    "play song": play_song,
+    "sonraki şarkı": play_next_song,
+    "next song": play_next_song,
+    "önceki şarkı": play_previous_song,
+    "previous song": play_previous_song,
+    "şarkıyı durdur": pause_song,
+    "pause song": pause_song,
+    "hava durumu": get_weather,
+    "weather": get_weather,
+    "Hey": HeyAssistant,
+    "web siteyi aç": open_website,
+    "open website": open_website,
+    "alarm kur": set_alarm,
+    "set alarm": set_alarm,
+    "ekran görüntüsü al": take_screenshot,
+    "take screenshot": take_screenshot,
+    "uygulame ekle": add_application,
+    "add application": add_application,
+    "bilgisayarı yeniden başlat": restart,
+    "restart computer": restart,
+    "oturumu kapat": log_out,
+    "log out": log_out,
+    "saat kaç": what_time_is_it,
+    "what time is it": what_time_is_it,
+    "sesi arttır": volume_up,
+    "increase volume": volume_up,
+    "sesi azalt": volume_down,
+    "decrease volume": volume_down,
+    "hangi gündeyiz": what_today,
+    "what day is it": what_today,
+    "yapılacaklar listesine ekle": todo,
+    "add to-do list": todo,
+    "yapılacaklar listesini göster": show_todo,
+    "show to-do list": show_todo,
+    "sekmeyi kapat": close_tab,
+    "close tab": close_tab,
+    "instagram'ı aç": open_instagram,
+    "open Instagram": open_instagram,
+    "şarkıyı devam ettir": resume_song,
+    "resume song": resume_song,
+    "web'de ara": search_web,
+    "search the web": search_web,
+    "uygulama aç": open_application,
+    "aç": open_application,
+    "open application": open_application,
+    "uygulama kapat": close_application,
+    "close application": close_application,
+    "oynatma listemi çal": play_playlist,
+    "play my playlist": play_playlist,
+    "bilgisayarı kapat": shutdown,
+    "shut down computer": shutdown,
+    # Other commands can be added here in both languages
+}
 
 
-    if command in commands:
-        commands[command]()
+
+
+    # Komutları ayırmak için ayırıcıları tanımla
+    separators = [" and ", " ve "]  # Gerektiğinde daha fazla ayırıcı ekleyin
+    individual_commands = [command]
+
+    for separator in separators:
+        if separator in command:
+            individual_commands = command.split(separator)
+            break
+
+    for individual_command in individual_commands:
+        executed = False  # executed değişkenini her bir komut için sıfırla
+
+        for key in commands:
+            if key.lower() in individual_command.lower():
+                if key == "open application" or "aç" in individual_command:
+                    if "aç" in individual_command:
+                        application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace(
+                            "open application", "").strip()
+                    else:
+                        application_name = individual_command.replace("uygulama aç", "").replace(
+                            "open application", "").strip()
+
+                    if application_name:
+                        open_application(application_name)
+                    else:
+                        speak("Which application would you like to open?")
+                        application_name = listen()
+                        open_application(application_name)
+                    executed = True
+                    break
+
+        if executed:
+            break  # Komut gerçekleştirildiğinde döngüyü sonlandır
+
+
+            # Check if the command contains "şarkı çal" or "play song" followed by a song name
+ # "şarkı çal" veya "play song" ile başlayan komutları kontrol et
+    if command.startswith("şarkı çal") or command.startswith("play song") or "adlı şarkıyı çal" in command:
+        # Komuttan şarkı adını çıkar
+        if "adlı şarkıyı çal" in command:
+             song_name = command.split("adlı şarkıyı çal", 1)[0].replace("şarkı çal", "").replace("play song", "").strip()
+        else:
+            song_name = command.replace("şarkı çal", "").replace("play song", "").strip()
+
+        if song_name:
+            speak("From which platform would you like to play the song, YouTube or Spotify?")
+            platform = listen().lower()
+
+            if platform == "spotify":
+                play_spotify_track(song_name)
+            elif platform == "youtube":
+                play_youtube(song_name)
+            else:
+                speak("Sorry, I didn't understand the platform. Please try again.")
+        else:
+           speak("Please provide the name of the song.")
     else:
-        unknown_command()
-
+        # Diğer komut işleme mantığı...
+         
+        if not executed:
+            unknown_command()
+    
  
 def run_assistant():
     initialize_engine()
