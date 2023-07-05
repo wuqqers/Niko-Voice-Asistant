@@ -464,33 +464,55 @@ def what_time_is_it():
 
 def open_application(application_name):
     applications = load_applications()
-    application_name = application_name.replace("'u", "").replace("'i", "").replace("'ı", "").strip()  # Tek tırnak içindeki 'u' ve 'ı' karakterlerini çıkaralım
-
-    # Uygulama adını büyük harfe çevirelim
+    application_name = application_name.replace("'u", "").replace("'i", "").replace("'ı", "").strip()
     application_name = application_name.lower()
 
     for app in applications:
         if app.lower() in application_name:
             application_path = applications[app]
-            speak(f"Opening {app}.")
+            speak(f"{app} uygulaması açılıyor.")
             subprocess.Popen(application_path)
             return
 
-    # Eşleşme bulunamadıysa buraya kadar gelecek
-    speak(f"Sorry, I couldn't find the corresponding application.")
-    speak(f"Please provide the location of the {application_name} application.")
-    application_path = filedialog.askopenfilename(title=f"Select {application_name} Application")
+    # Eşleşme bulunamadıysa uygulama adını al
+    if not application_name:
+        speak("Hangi uygulamayı açmak istersiniz?")
+        application_name = listen()
+
+    # Uygulama adıyla eşleşen bir uygulama bulunursa aç
+    for app in applications:
+        if app.lower() in application_name:
+            application_path = applications[app]
+            speak(f"{app} uygulaması açılıyor.")
+            subprocess.Popen(application_path)
+            return
+
+    # Uygulama adıyla eşleşen bir uygulama bulunamazsa hata mesajı ver
+    speak("Maalesef, belirtilen uygulamayı bulamadım.")
+
+
+    applications = load_applications()
+    application_name = application_name.replace("'u", "").replace("'i", "").replace("'ı", "").strip()
+    application_name = application_name.lower()
+
+    for app in applications:
+        if app.lower() in application_name:
+            application_path = applications[app]
+            speak(f"{app} uygulaması açılıyor.")
+            subprocess.Popen(application_path)
+            return
+
+    speak(f"Maalesef, ilgili uygulamayı bulamadım.")
+    speak(f"{application_name} uygulamasının konumunu belirtir misiniz?")
+    application_path = filedialog.askopenfilename(title=f"{application_name} Uygulamasını Seçin")
 
     if os.path.exists(application_path):
-        speak(f"Opening {application_name}.")
+        speak(f"{application_name} uygulaması açılıyor.")
         subprocess.Popen(application_path)
         applications[application_name] = application_path
         save_applications(applications)
     else:
-        speak("Sorry, I couldn't find the application.")
-
-
-
+        speak("Maalesef, uygulamayı bulamadım.")
 
 
 def search_application(application_name):
@@ -501,6 +523,7 @@ def search_application(application_name):
     except FileNotFoundError:
         return None
 
+
 def load_applications():
     try:
         with open('applications.json', 'r') as file:
@@ -508,7 +531,6 @@ def load_applications():
             return applications
     except FileNotFoundError:
         return {}
-
 
 
 # Other functions omitted for brevity
@@ -662,9 +684,8 @@ def HeyAssistant():
     speak(f"Hi, I'm {assistant_name}. How can I assist you, {user_name}?")
 
 
- 
 def execute_command(command):
-    global is_spotify_opened  # is_spotify_opened değişkenini global olarak kullanmak için eklenen satır
+    global is_spotify_opened
     asistant_name = get_assistant_name()
     commands = {
     "şarkı çal": play_song,
@@ -710,9 +731,6 @@ def execute_command(command):
     "resume song": resume_song,
     "web'de ara": search_web,
     "search the web": search_web,
-    "uygulama aç": open_application,
-    "aç": open_application,
-    "open application": open_application,
     "uygulama kapat": close_application,
     "close application": close_application,
     "oynatma listemi çal": play_playlist,
@@ -722,11 +740,7 @@ def execute_command(command):
     # Other commands can be added here in both languages
 }
 
-
-
-
-    # Komutları ayırmak için ayırıcıları tanımla
-    separators = [" and ", " ve "]  # Gerektiğinde daha fazla ayırıcı ekleyin
+    separators = [" and ", " ve "]
     individual_commands = [command]
 
     for separator in separators:
@@ -735,42 +749,43 @@ def execute_command(command):
             break
 
     for individual_command in individual_commands:
-        executed = False  # executed değişkenini her bir komut için sıfırla
+        executed = False
 
         for key in commands:
             if key.lower() in individual_command.lower():
-                if key == "open application" or "aç" in individual_command:
-                    if "aç" in individual_command:
-                        application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace(
-                            "open application", "").strip()
-                    else:
-                        application_name = individual_command.replace("uygulama aç", "").replace(
-                            "open application", "").strip()
-
-                    if application_name:
-                        open_application(application_name)
-                    else:
-                        speak("Which application would you like to open?")
-                        application_name = listen()
-                        open_application(application_name)
-                    executed = True
-                    break
+                commands[key]()
+                executed = True
+                break
 
         if executed:
-            break  # Komut gerçekleştirildiğinde döngüyü sonlandır
+            break
 
+        if not executed:
+            if "uygulama aç" in individual_command.lower() or "open application" in individual_command.lower():
+                if "aç" in individual_command:
+                    application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace("open application", "").strip()
+                else:
+                    application_name = individual_command.replace("uygulama aç", "").replace("open application", "").strip()
+                if application_name:
+                    open_application(application_name)
+                else:
+                    speak("Which application would you like to open?")
+                    application_name = listen()
+                    open_application(application_name)
+                executed = True
+                break
 
-            # Check if the command contains "şarkı çal" or "play song" followed by a song name
- # "şarkı çal" veya "play song" ile başlayan komutları kontrol et
+        if executed:
+            break
+
     if command.startswith("şarkı çal") or command.startswith("play song") or "adlı şarkıyı çal" in command:
-        # Komuttan şarkı adını çıkar
         if "adlı şarkıyı çal" in command:
-             song_name = command.split("adlı şarkıyı çal", 1)[0].replace("şarkı çal", "").replace("play song", "").strip()
+            song_name = command.split("adlı şarkıyı çal", 1)[0].replace("şarkı çal", "").replace("play song", "").strip()
         else:
             song_name = command.replace("şarkı çal", "").replace("play song", "").strip()
 
         if song_name:
-            speak("From which platform would you like to play the song, YouTube or Spotify?")
+            speak("Hangi plFrom which platform would you like to play the song, YouTube or Spotify?")
             platform = listen().lower()
 
             if platform == "spotify":
@@ -780,13 +795,15 @@ def execute_command(command):
             else:
                 speak("Sorry, I didn't understand the platform. Please try again.")
         else:
-           speak("Please provide the name of the song.")
+            speak("Please provide the name of the song.")
     else:
-        # Diğer komut işleme mantığı...
-         
         if not executed:
-            unknown_command()
-    
+            if "aç" in command:
+                application_name = command.split("aç", 1)[0].strip()
+                open_application(application_name)
+            else:
+                unknown_command()
+
  
 def run_assistant():
     initialize_engine()
