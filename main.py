@@ -464,55 +464,43 @@ def what_time_is_it():
 
 def open_application(application_name):
     applications = load_applications()
-    application_name = application_name.replace("'u", "").replace("'i", "").replace("'ı", "").strip()
+    application_name = application_name.replace("'u", "").replace("'ı", "").strip()  # Tek tırnak içindeki 'u' ve 'ı' karakterlerini çıkaralım
+    if application_name in applications:
+        application_path = applications[application_name]
+
+    # Uygulama adını büyük harfe çevirelim
     application_name = application_name.lower()
 
     for app in applications:
         if app.lower() in application_name:
             application_path = applications[app]
-            speak(f"{app} uygulaması açılıyor.")
+            speak(f"Opening {app}.")
             subprocess.Popen(application_path)
             return
 
-    # Eşleşme bulunamadıysa uygulama adını al
-    if not application_name:
-        speak("Hangi uygulamayı açmak istersiniz?")
-        application_name = listen()
-
-    # Uygulama adıyla eşleşen bir uygulama bulunursa aç
-    for app in applications:
-        if app.lower() in application_name:
-            application_path = applications[app]
-            speak(f"{app} uygulaması açılıyor.")
-            subprocess.Popen(application_path)
-            return
-
-    # Uygulama adıyla eşleşen bir uygulama bulunamazsa hata mesajı ver
-    speak("Maalesef, belirtilen uygulamayı bulamadım.")
-
-
-    applications = load_applications()
-    application_name = application_name.replace("'u", "").replace("'i", "").replace("'ı", "").strip()
-    application_name = application_name.lower()
-
-    for app in applications:
-        if app.lower() in application_name:
-            application_path = applications[app]
-            speak(f"{app} uygulaması açılıyor.")
-            subprocess.Popen(application_path)
-            return
-
-    speak(f"Maalesef, ilgili uygulamayı bulamadım.")
-    speak(f"{application_name} uygulamasının konumunu belirtir misiniz?")
-    application_path = filedialog.askopenfilename(title=f"{application_name} Uygulamasını Seçin")
+    # Eşleşme bulunamadıysa buraya kadar gelecek
+    speak(f"Sorry, I couldn't find the corresponding application.")
+    speak(f"Please provide the location of the {application_name} application.")
+    application_path = filedialog.askopenfilename(title=f"Select {application_name} Application")
 
     if os.path.exists(application_path):
-        speak(f"{application_name} uygulaması açılıyor.")
+        speak(f"Opening {application_name}.")
         subprocess.Popen(application_path)
         applications[application_name] = application_path
         save_applications(applications)
     else:
-        speak("Maalesef, uygulamayı bulamadım.")
+        speak(f"Sorry, I couldn't find the {application_name} application.")
+        speak(f"Please provide the location of the {application_name} application.")
+        application_path = filedialog.askopenfilename(title=f"Select {application_name} Application")
+        speak("Sorry, I couldn't find the application.")
+
+        if os.path.exists(application_path):
+            speak(f"Opening {application_name}.")
+            subprocess.Popen(application_path)
+            applications[application_name] = application_path
+            save_applications(applications)
+        else:
+            speak("Sorry, I couldn't find the application.")
 
 
 def search_application(application_name):
@@ -757,15 +745,15 @@ def execute_command(command):
                 break
 
         if not executed:
-            if "uygulama aç" in individual_command.lower() or "open application" or "aç" in individual_command.lower():
-                if "aç" in individual_command:
+            if "uygulama aç" in individual_command.lower() or "open application" in individual_command.lower():
+                if "aç" in individual_command.lower():
                     application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace("open application", "").strip()
                 else:
                     application_name = individual_command.replace("uygulama aç", "").replace("open application", "").strip()
                 if application_name:
                     open_application(application_name)
                 else:
-                    speak("Which application would you like to open?")
+                    speak("Hangi uygulamayı açmak istersiniz?")
                     application_name = listen()
                     open_application(application_name)
                 executed = True
@@ -778,7 +766,7 @@ def execute_command(command):
                     song_name = individual_command.replace("şarkı çal", "").replace("play song", "").strip()
 
                 if song_name:
-                    speak("Sorry, I didn't understand the platform. Please try again.")
+                    speak("Hangi platformdan şarkıyı çalmak istersiniz, YouTube veya Spotify?")
                     platform = listen().lower()
 
                     if platform == "spotify":
@@ -786,11 +774,11 @@ def execute_command(command):
                     elif platform == "youtube":
                         play_youtube(song_name)
                     else:
-                        speak("Please provide the name of the song.")
+                        speak("Üzgünüm, platformu anlayamadım. Lütfen tekrar deneyin.")
                     executed = True
 
         if not executed:
-            if "aç" in individual_command:
+            if "aç" in individual_command.lower():
                 application_name = individual_command.split("aç", 1)[0].strip()
                 open_application(application_name)
             else:
