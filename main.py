@@ -683,7 +683,6 @@ def HeyAssistant():
     assistant_name = get_assistant_name()
     speak(f"Hi, I'm {assistant_name}. How can I assist you, {user_name}?")
 
-
 def execute_command(command):
     global is_spotify_opened
     asistant_name = get_assistant_name()
@@ -757,11 +756,8 @@ def execute_command(command):
                 executed = True
                 break
 
-        if executed:
-            break
-
         if not executed:
-            if "uygulama aç" in individual_command.lower() or "open application" in individual_command.lower():
+            if "uygulama aç" in individual_command.lower() or "open application" or "aç" in individual_command.lower():
                 if "aç" in individual_command:
                     application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace("open application", "").strip()
                 else:
@@ -773,38 +769,37 @@ def execute_command(command):
                     application_name = listen()
                     open_application(application_name)
                 executed = True
-                break
 
-        if executed:
-            break
-
-    if command.startswith("şarkı çal") or command.startswith("play song") or "adlı şarkıyı çal" in command:
-        if "adlı şarkıyı çal" in command:
-            song_name = command.split("adlı şarkıyı çal", 1)[0].replace("şarkı çal", "").replace("play song", "").strip()
-        else:
-            song_name = command.replace("şarkı çal", "").replace("play song", "").strip()
-
-        if song_name:
-            speak("Hangi plFrom which platform would you like to play the song, YouTube or Spotify?")
-            platform = listen().lower()
-
-            if platform == "spotify":
-                play_spotify_track(song_name)
-            elif platform == "youtube":
-                play_youtube(song_name)
-            else:
-                speak("Sorry, I didn't understand the platform. Please try again.")
-        else:
-            speak("Please provide the name of the song.")
-    else:
         if not executed:
-            if "aç" in command:
-                application_name = command.split("aç", 1)[0].strip()
+            if individual_command.startswith("şarkı çal") or individual_command.startswith("play song") or "adlı şarkıyı çal" in individual_command:
+                if "adlı şarkıyı çal" in individual_command:
+                    song_name = individual_command.split("adlı şarkıyı çal", 1)[0].replace("şarkı çal", "").replace("play song", "").strip()
+                else:
+                    song_name = individual_command.replace("şarkı çal", "").replace("play song", "").strip()
+
+                if song_name:
+                    speak("Sorry, I didn't understand the platform. Please try again.")
+                    platform = listen().lower()
+
+                    if platform == "spotify":
+                        play_spotify_track(song_name)
+                    elif platform == "youtube":
+                        play_youtube(song_name)
+                    else:
+                        speak("Please provide the name of the song.")
+                    executed = True
+
+        if not executed:
+            if "aç" in individual_command:
+                application_name = individual_command.split("aç", 1)[0].strip()
                 open_application(application_name)
             else:
                 unknown_command()
 
- 
+        # Her bir komutun ardından executed değişkeni sıfırlanır
+        executed = False
+
+
 def run_assistant():
     initialize_engine()
     applications = load_applications()
