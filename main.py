@@ -753,7 +753,7 @@ def execute_command(command):
                 if application_name:
                     open_application(application_name)
                 else:
-                    speak("Hangi uygulamayı açmak istersiniz?")
+                    speak("Which application would you like to open?")
                     application_name = listen()
                     open_application(application_name)
                 executed = True
@@ -766,7 +766,7 @@ def execute_command(command):
                     song_name = individual_command.replace("şarkı çal", "").replace("play song", "").strip()
 
                 if song_name:
-                    speak("Hangi platformdan şarkıyı çalmak istersiniz, YouTube veya Spotify?")
+                    speak("Which platform would you like to play the song from, YouTube or Spotify?")
                     platform = listen().lower()
 
                     if platform == "spotify":
@@ -774,7 +774,7 @@ def execute_command(command):
                     elif platform == "youtube":
                         play_youtube(song_name)
                     else:
-                        speak("Üzgünüm, platformu anlayamadım. Lütfen tekrar deneyin.")
+                        speak("Sorry, I couldn't understand the platform. Please try again.")
                     executed = True
 
         if not executed:
