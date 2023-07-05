@@ -464,23 +464,31 @@ def what_time_is_it():
 
 def open_application(application_name):
     applications = load_applications()
-    application_name = application_name.replace("'u", "").replace("'ı", "").strip()  # Tek tırnak içindeki 'u' ve 'ı' karakterlerini çıkaralım
-    if application_name in applications:
-        application_path = applications[application_name]
+    application_name = application_name.replace("'u", "").replace("'i", "").replace("'ı", "").strip()  # Tek tırnak içindeki 'u' ve 'ı' karakterlerini çıkaralım
+
+    # Uygulama adını büyük harfe çevirelim
+    application_name = application_name.lower()
+
+    for app in applications:
+        if app.lower() in application_name:
+            application_path = applications[app]
+            speak(f"Opening {app}.")
+            subprocess.Popen(application_path)
+            return
+
+    # Eşleşme bulunamadıysa buraya kadar gelecek
+    speak(f"Sorry, I couldn't find the corresponding application.")
+    speak(f"Please provide the location of the {application_name} application.")
+    application_path = filedialog.askopenfilename(title=f"Select {application_name} Application")
+
+    if os.path.exists(application_path):
         speak(f"Opening {application_name}.")
         subprocess.Popen(application_path)
+        applications[application_name] = application_path
+        save_applications(applications)
     else:
-        speak(f"Sorry, I couldn't find the {application_name} application.")
-        speak(f"Please provide the location of the {application_name} application.")
-        application_path = filedialog.askopenfilename(title=f"Select {application_name} Application")
+        speak("Sorry, I couldn't find the application.")
 
-        if os.path.exists(application_path):
-            speak(f"Opening {application_name}.")
-            subprocess.Popen(application_path)
-            applications[application_name] = application_path
-            save_applications(applications)
-        else:
-            speak("Sorry, I couldn't find the application.")
 
 
 
