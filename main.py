@@ -200,22 +200,26 @@ def listen(silence_duration=1, total_duration=15):
     except sr.UnknownValueError:
         print("Speech not recognized.")
     except sr.RequestError as e:
-        print("Speech recognition service is not available; {0}".format(e))
+        print("Speech recognition service unavailable; {0}".format(e))
 
-    # If the user's sentence is not completed or completely silent, adjust the silence duration and listen again
+    # Kullanıcının cümlesi tamamlanmamış veya tamamen sessiz ise sessizlik süresini ayarlayarak tekrar dinleme yap
     if len(text) == 0 or not any(char.isalpha() for char in text):
         if silence_duration < 5:
-            return listen(silence_duration=silence_duration+1, total_duration=total_duration)
-    
-    # If the user's sentence is short, return immediately without adjusting silence duration
+            print("Sentence incomplete or completely silent. Listening again...")
+            time.sleep(silence_duration)  # Sessizlik süresi kadar beklet
+            return listen(silence_duration=silence_duration + 1, total_duration=total_duration)
+
+    # Kullanıcının cümlesi kısa ise hemen dön, sessizlik süresini ayarlamadan
     if len(text.split()) <= 3:
         return text
 
-    # Adjust silence duration based on the length of the sentence
+    # Cümlenin uzunluğuna göre sessizlik süresini ayarla
     adjusted_silence_duration = silence_duration + len(text.split()) // 3
     if adjusted_silence_duration > 5:
         adjusted_silence_duration = 5
 
+    print("The sentence is long. Adjusting the silence time...")
+    time.sleep(adjusted_silence_duration)  # Sessizlik süresi kadar beklet
     return listen(silence_duration=adjusted_silence_duration, total_duration=total_duration)
 
 
@@ -885,7 +889,7 @@ if __name__ == "__main__":
     show_logo()  # Logo gösterimini yapın
     time.sleep(3)  # Logonun gösterim süresini bekleyin
     set_device_for_spotify()
-    time.sleep(3)  # Wait Text .)
+    time.sleep(3)  # Logonun gösterim süresini bekleyin
     run_assistant()
     
 
