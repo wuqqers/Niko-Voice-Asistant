@@ -885,7 +885,7 @@ if __name__ == "__main__":
     show_logo()  # Logo gösterimini yapın
     time.sleep(3)  # Logonun gösterim süresini bekleyin
     set_device_for_spotify()
-    time.sleep(3)  # Logonun gösterim süresini bekleyin
+    time.sleep(3)  # Wait Text .)
     run_assistant()
     
 
