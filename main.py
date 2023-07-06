@@ -180,9 +180,8 @@ def save_applications(applications):
 #         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 
 
-def listen():
+def listen(silence_duration=1, total_duration=15):
     recognizer = sr.Recognizer()
-    audio_duration = 3  # Initial maximum duration for listening (in seconds)
     text = ""
 
     with sr.Microphone() as source:
@@ -191,7 +190,7 @@ def listen():
         recognizer.dynamic_energy_adjustment_damping = 0.15
 
         print("Listening...")
-        audio = recognizer.listen(source, phrase_time_limit=audio_duration)
+        audio = recognizer.listen(source, timeout=total_duration, phrase_time_limit=total_duration)
 
     try:
         text = recognizer.recognize_google(audio, language="tr-TR")
@@ -202,13 +201,22 @@ def listen():
     except sr.RequestError as e:
         print("Speech recognition service is not available; {0}".format(e))
 
-    # If the user's sentence is not completed, increase the duration and listen again
-    if len(text) == 0 or len(text.split()) > 1:
-        if audio_duration < 9:
-            audio_duration += 1
-            return listen()
+    # If the user's sentence is not completed or completely silent, adjust the silence duration and listen again
+    if len(text) == 0 or not any(char.isalpha() for char in text):
+        if silence_duration < 5:
+            return listen(silence_duration=silence_duration+1, total_duration=total_duration)
+    
+    # If the user's sentence is short, return immediately without adjusting silence duration
+    if len(text.split()) <= 3:
+        return text
 
-    return ""
+    # Adjust silence duration based on the length of the sentence
+    adjusted_silence_duration = silence_duration + len(text.split()) // 3
+    if adjusted_silence_duration > 5:
+        adjusted_silence_duration = 5
+
+    return listen(silence_duration=adjusted_silence_duration, total_duration=total_duration)
+
 
 
 
@@ -745,18 +753,22 @@ def execute_command(command):
                 break
 
         if not executed:
-            if "uygulama aç" in individual_command.lower() or "open application" in individual_command.lower():
+           if ("uygulama aç" in individual_command.lower() or "open application" in individual_command.lower() or "aç" in individual_command.lower()) and ("saçmalama ya" not in individual_command.lower()):
+             if any(forbidden_word in individual_command.lower() for forbidden_word in ["saç", "taç", "kaç", "saçmalama", "açma", "maç", "gaç", "haç" ]):
+              unknown_command()
+             else:
                 if "aç" in individual_command.lower():
-                    application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace("open application", "").strip()
+                 application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace("open application", "").strip()
                 else:
-                    application_name = individual_command.replace("uygulama aç", "").replace("open application", "").strip()
+                  application_name = individual_command.replace("uygulama aç", "").replace("open application", "").strip()
                 if application_name:
-                    open_application(application_name)
+                 open_application(application_name)
                 else:
-                    speak("Which application would you like to open?")
-                    application_name = listen()
-                    open_application(application_name)
-                executed = True
+                 speak("Which application would you like to open?")
+                 application_name = listen()
+                 open_application(application_name)
+                 executed = True
+
 
         if not executed:
             if individual_command.startswith("şarkı çal") or individual_command.startswith("play song") or "adlı şarkıyı çal" in individual_command:
@@ -776,13 +788,6 @@ def execute_command(command):
                     else:
                         speak("Sorry, I couldn't understand the platform. Please try again.")
                     executed = True
-
-        if not executed:
-            if "aç" in individual_command.lower():
-                application_name = individual_command.split("aç", 1)[0].strip()
-                open_application(application_name)
-            else:
-                unknown_command()
 
         # Her bir komutun ardından executed değişkeni sıfırlanır
         executed = False
