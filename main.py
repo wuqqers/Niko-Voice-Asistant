@@ -21,6 +21,7 @@ import time
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import ctypes
 import pygetwindow as gw
+import re
 current_date = datetime.datetime.now().date()
 current_day = current_date.strftime("%A")  # Haftanın gününü almak için
 current_month = current_date.strftime("%B")  # Ayın adını almak için
@@ -218,67 +219,133 @@ def listen(silence_duration=1, total_duration=15):
     return listen(silence_duration=adjusted_silence_duration, total_duration=total_duration)
 
 
+def extract_playlist_number(response):
+    # Extract playlist number from the response using regular expression
+    match = re.search(r'\b(\d+)\b', response)
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
+def play_user_playlist(playlist_number=None):
+    global is_spotify_opened
+    load_names()
+    user_name = get_user_name()
+
+    if is_spotify_opened:
+        if not playlist_number:
+            speak(user_name + ", which playlist would you like me to play? You can say the number.")
+            response = listen()
+
+            # Extract playlist number from the response
+            playlist_number = extract_playlist_number(response)
+
+    else:
+        url = "https://open.spotify.com/"
+        if not is_site_opened(url):
+            webbrowser.open(url)
+            is_spotify_opened = True
+            if not playlist_number:
+                speak(user_name + ", which playlist would you like me to play? You can say the number.")
+                response = listen()
+
+                # Extract playlist number from the response
+                playlist_number = extract_playlist_number(response)
+
+                if playlist_number:
+                    play_user_playlist(playlist_number)
+                    return
+
+    if playlist_number:
+        user_playlists = sp.current_user_playlists(limit=50)
+        if user_playlists["items"]:
+            playlist_index = int(playlist_number) - 1
+            if playlist_index < len(user_playlists["items"]):
+                playlist_uri = user_playlists["items"][playlist_index]["uri"]
+                devices = sp.devices()
+                target_device_id = None
+                for device in devices["devices"]:
+                    if device["type"] == "Computer":
+                        target_device_id = device["id"]
+                        sp.transfer_playback(device_id=target_device_id, force_play=True)
+                        break
+                if target_device_id:
+                    sp.start_playback(device_id=target_device_id, context_uri=playlist_uri)
+                    current_playlist_name = user_playlists["items"][playlist_index]["name"]
+                    speak("Now playing: " + current_playlist_name)
+                else:
+                    speak("No suitable device to play was found.")
+            else:
+                speak("The specified playlist number is not valid.")
+        else:
+            speak("I couldn't find your own playlists.")
 
 # Spotify yetkilendirme ayarları
 scope = "user-read-playback-state,user-modify-playback-state"
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 is_spotify_opened = False  # global değişken olarak tanımlanması
 is_playing = False
-def play_playlist(playlist_index=None):
-    playlists = sp.current_user_playlists()["items"]
-    num_playlists = len(playlists)
+def play_playlist(playlist_name=None):
     global is_spotify_opened
-    global is_playing
     load_names()
     user_name = get_user_name()
-    if is_playing is True:
-        pause_song()
-        is_playing = False
-    if is_spotify_opened:
-        if playlist_index is None:
-            speak(f"{user_name}, which playlist would you like me to play?")
-            playlist_index = listen()
-            if playlist_index:
-                try:
-                    playlist_index = int(playlist_index) - 1  # Convert to integer here
-                    if playlist_index < 0 or playlist_index >= num_playlists:
-                        speak("Invalid playlist index. Please try again.")
-                    else:
-                        # Pause the current playback if any
-                        sp.pause_playback()
 
-                        playlist_id = playlists[playlist_index]["id"]
-                        sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
-                        is_playing = True
-                except ValueError:
-                    speak("Invalid input. Please provide a valid playlist index.")
-                    playlist_index = None
+    if is_spotify_opened:
+        speak("Do you want me to play from your own playlist?")
+        own = listen().lower()
+        if own == "evet" or own == "yes":
+            play_user_playlist()
+            return
+        elif own == "hayır" or own == "no":
+            if not playlist_name:
+                speak(user_name + ", Which playlist would you like me to play?")
+                playlist_name = listen()
     else:
         url = "https://open.spotify.com/"
         if not is_site_opened(url):
             webbrowser.open(url)
             is_spotify_opened = True
-            if playlist_index is None:
-                speak(f"{user_name}, which playlist would you like me to play?")
-                playlist_index = listen()
-                if playlist_index:
-                    try:
-                        playlist_index = int(playlist_index) - 1  # Convert to integer here
-                        if playlist_index < 0 or playlist_index >= num_playlists:
-                            speak("Invalid playlist index. Please try again.")
-                        else:
-                            # Pause the current playback if any
-                            sp.pause_playback()
+            if not playlist_name:
+                speak(user_name + ", Which playlist would you like me to play?")
+                playlist_name = listen()
+                if playlist_name:
+                    play_playlist(playlist_name)
+                    return
 
-                            playlist_id = playlists[playlist_index]["id"]
-                            sp.start_playback(context_uri=f"spotify:playlist:{playlist_id}")
-                            is_playing = True
-                    except ValueError:
-                        speak("Invalid input. Please provide a valid playlist index.")
-                        playlist_index = listen()
+    if playlist_name:
+        results = sp.search(q=playlist_name, limit=1, type="playlist")
+        if results["playlists"]["items"]:
+            playlist_uri = results["playlists"]["items"][0]["uri"]
+            devices = sp.devices()
+            target_device_id = None
+            for device in devices["devices"]:
+                if device["type"] == "Computer":
+                    target_device_id = device["id"]
+                    break
+            if target_device_id:
+                sp.start_playback(device_id=target_device_id, context_uri=playlist_uri)
+                current_playlist_name = results["playlists"]["items"][0]["name"]
+                speak("Now playing: " + current_playlist_name)
+            else:
+                speak("No suitable device found to play.")
+        else:
+            speak("Sorry, I couldn't find that playlist.")
 
+def set_device_for_spotify():
+    speak("Do not forget to open the spotify program on your computer for the Spotify function to work properly!")
+    global is_spotify_opened 
+    is_spotify_opened = True
+    devices = sp.devices()
+    target_device_id = None
+    for device in devices["devices"]:
+        if device["type"] == "Computer":
+            target_device_id = device["id"]
+            break
+    if target_device_id:
+        sp.transfer_playback(device_id=target_device_id, force_play=False)
+    else:
+        is_spotify_opened = False
 def play_spotify_track(track_name=None):
     global is_spotify_opened
     load_names()
@@ -309,6 +376,7 @@ def play_spotify_track(track_name=None):
             for device in devices["devices"]:
                 if device["type"] == "Computer":
                     target_device_id = device["id"]
+                    sp.transfer_playback(device_id=target_device_id, force_play=True)
                     break
             if target_device_id:
                 sp.start_playback(device_id=target_device_id, uris=[track_uri])
@@ -728,8 +796,8 @@ def execute_command(command):
     "search the web": search_web,
     "uygulama kapat": close_application,
     "close application": close_application,
-    "oynatma listemi çal": play_playlist,
-    "play my playlist": play_playlist,
+    "oynatma listesi çal": play_playlist,
+    "play  playlist": play_playlist,
     "bilgisayarı kapat": shutdown,
     "shut down computer": shutdown,
     # Other commands can be added here in both languages
@@ -816,6 +884,9 @@ def run_assistant():
 if __name__ == "__main__":
     show_logo()  # Logo gösterimini yapın
     time.sleep(3)  # Logonun gösterim süresini bekleyin
+    set_device_for_spotify()
+    time.sleep(3)  # Logonun gösterim süresini bekleyin
     run_assistant()
+    
 
 run_assistant()
