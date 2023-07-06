@@ -1,9 +1,10 @@
 ### Bugs?
-- Spotify Sometimes won't work perfect because of spotify api 
+~~- Spotify Sometimes won't work perfect because of spotify api~~
 ### Changelog v0.3
 - Added a small function to play the song directly by saying its name (example: play (song name))
 - Added a small function to open the application directly by saying its name (example: open application (application name))
 - Made some minor command additions and fixes for Turkish language
+- Now you can play both our own playlists and other playlists on spotify with any bugs (I guess :D ).
 - Added Multi Language
 ### Changelog v0.2
 - Added small code block that will respond to you when you call the Assistant by name.
