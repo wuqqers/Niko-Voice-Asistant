@@ -18,7 +18,6 @@ import tkinter as tk
 from tkinter import filedialog
 import threading
 import time
-from PIL import Image, ImageTk, ImageDraw, ImageFont
 import ctypes
 import pygetwindow as gw
 import re
@@ -91,7 +90,6 @@ def initialize_engine():
     engine.endLoop()
 
 def speak(text):
-    print(text)
     engine.say(text)
     engine.runAndWait()
 
@@ -751,10 +749,7 @@ def HeyAssistant():
     assistant_name = get_assistant_name()
     speak(f"Hi, I'm {assistant_name}. How can I assist you, {user_name}?")
 
-def execute_command(command):
-    global is_spotify_opened
-    asistant_name = get_assistant_name()
-    commands = {
+COMMANDS = {
     "şarkı çal": play_song,
     "play song": play_song,
     "sonraki şarkı": play_next_song,
@@ -804,67 +799,7 @@ def execute_command(command):
     "play  playlist": play_playlist,
     "bilgisayarı kapat": shutdown,
     "shut down computer": shutdown,
-    # Other commands can be added here in both languages
 }
-
-    separators = [" and ", " ve "]
-    individual_commands = [command]
-
-    for separator in separators:
-        if separator in command:
-            individual_commands = command.split(separator)
-            break
-
-    for individual_command in individual_commands:
-        executed = False
-
-        for key in commands:
-            if key.lower() in individual_command.lower():
-                commands[key]()
-                executed = True
-                break
-
-        if not executed:
-           if ("uygulama aç" in individual_command.lower() or "open application" in individual_command.lower() or "aç" in individual_command.lower()) and ("saçmalama ya" not in individual_command.lower()):
-             if any(forbidden_word in individual_command.lower() for forbidden_word in ["saç", "taç", "kaç", "saçmalama", "açma", "maç", "gaç", "haç" ]):
-              unknown_command()
-             else:
-                if "aç" in individual_command.lower():
-                 application_name = individual_command.split("aç", 1)[0].replace("uygulama aç", "").replace("open application", "").strip()
-                else:
-                  application_name = individual_command.replace("uygulama aç", "").replace("open application", "").strip()
-                if application_name:
-                 open_application(application_name)
-                else:
-                 speak("Which application would you like to open?")
-                 application_name = listen()
-                 open_application(application_name)
-                 executed = True
-
-
-        if not executed:
-            if individual_command.startswith("şarkı çal") or individual_command.startswith("play song") or "adlı şarkıyı çal" in individual_command:
-                if "adlı şarkıyı çal" in individual_command:
-                    song_name = individual_command.split("adlı şarkıyı çal", 1)[0].replace("şarkı çal", "").replace("play song", "").strip()
-                else:
-                    song_name = individual_command.replace("şarkı çal", "").replace("play song", "").strip()
-
-                if song_name:
-                    speak("Which platform would you like to play the song from, YouTube or Spotify?")
-                    platform = listen().lower()
-
-                    if platform == "spotify":
-                        play_spotify_track(song_name)
-                    elif platform == "youtube":
-                        play_youtube(song_name)
-                    else:
-                        speak("Sorry, I couldn't understand the platform. Please try again.")
-                    executed = True
-
-        # Her bir komutun ardından executed değişkeni sıfırlanır
-        executed = False
-
-
 def run_assistant():
     initialize_engine()
     applications = load_applications()
@@ -878,12 +813,15 @@ def run_assistant():
         assistant_name = get_assistant_name()
         user_name = get_user_name()
         save_names(assistant_name, user_name)
+    
     while True:
         command = listen().lower()
         print("Alınan komut:", command)  # Sorunları ayıklama amacıyla alınan komutu yazdırma
-        execute_command(command)
-
-
+        
+        if command in COMMANDS:
+            COMMANDS[command]()  # Use square brackets to access and call the function
+        else:
+            unknown_command()
 
 if __name__ == "__main__":
     show_logo()  # Logo gösterimini yapın
@@ -891,6 +829,3 @@ if __name__ == "__main__":
     set_device_for_spotify()
     time.sleep(3)  # Logonun gösterim süresini bekleyin
     run_assistant()
-    
-
-run_assistant()
