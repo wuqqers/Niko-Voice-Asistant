@@ -179,7 +179,7 @@ def save_applications(applications):
 #         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 
 
-def listen(silence_duration=1, total_duration=15):
+def listen(silence_duration=0.2, total_duration=15):
     recognizer = sr.Recognizer()
     text = ""
 
@@ -760,7 +760,7 @@ COMMANDS = {
     "pause song": pause_song,
     "hava durumu": get_weather,
     "weather": get_weather,
-    "Hey": HeyAssistant,
+    "hey": HeyAssistant,
     "web siteyi aç": open_website,
     "open website": open_website,
     "alarm kur": set_alarm,
@@ -798,6 +798,7 @@ COMMANDS = {
     "oynatma listesi çal": play_playlist,
     "play  playlist": play_playlist,
     "bilgisayarı kapat": shutdown,
+    "niko": HeyAssistant,
     "shut down computer": shutdown,
 }
 def run_assistant():
