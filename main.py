@@ -21,6 +21,7 @@ import time
 import ctypes
 import pygetwindow as gw
 import re
+from difflib import SequenceMatcher
 current_date = datetime.datetime.now().date()
 current_day = current_date.strftime("%A")  # Haftanın gününü almak için
 current_month = current_date.strftime("%B")  # Ayın adını almak için
@@ -179,7 +180,7 @@ def save_applications(applications):
 #         time.sleep(1)  # 1 saniye bekle ve tekrar dinle
 
 
-def listen(silence_duration=0.2, total_duration=15):
+def listen(silence_duration=0.2, total_duration=10):
     recognizer = sr.Recognizer()
     text = ""
 
@@ -801,6 +802,8 @@ COMMANDS = {
     "niko": HeyAssistant,
     "shut down computer": shutdown,
 }
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 def run_assistant():
     initialize_engine()
     applications = load_applications()
@@ -815,12 +818,38 @@ def run_assistant():
         user_name = get_user_name()
         save_names(assistant_name, user_name)
     
+     # Start the main loop
     while True:
-        command = listen().lower()
-        print("Alınan komut:", command)  # Sorunları ayıklama amacıyla alınan komutu yazdırma
-        
-        if command in COMMANDS:
-            COMMANDS[command]()  # Use square brackets to access and call the function
+    # Listen for the user's response
+     response = listen().lower()
+
+     # Check if the response is in the list of commands
+     if response in COMMANDS:
+        COMMANDS[response]()
+     else:
+        # Find the most similar command
+        matched_command = None
+        highest_similarity = 0.3
+
+        for key in COMMANDS:
+            if similar(response, key) > highest_similarity:
+                matched_command = key
+                highest_similarity = similar(response, key)
+                break
+
+        # If a similar command was found, ask the user if they meant that command
+        if matched_command:
+            # Speak the confirmation prompt
+            speak(f"Did you mean {matched_command}? (yes/no): ")
+
+            # Listen for the user's response
+            second_response = listen().lower()
+
+            # If the user said yes, execute the command
+            if second_response == "evet" or second_response == "yes":
+                COMMANDS[matched_command]()
+            else:
+                unknown_command()
         else:
             unknown_command()
 
