@@ -1,35 +1,38 @@
-### Bugs?
-~~- Spotify Sometimes won't work perfect because of spotify api~~
-### Changelog v0.4
-- optimised commands block
-- optimised silence duration
-- Added a feature that ensures the accuracy of command.
-### Changelog v0.3
-- Added a small function to play the song directly by saying its name (example: play (song name))
-- Added a small function to open the application directly by saying its name (example: open application (application name))
-- Made some minor command additions and fixes for Turkish language
-- Now you can play both our own playlists and other playlists on spotify with any bugs (I guess :D ).
-- Added Multi Language
-### Changelog v0.2
-- Added small code block that will respond to you when you call the Assistant by name.
-- Updated listen function slightly more optimized
-- The Alarms Function has been updated and now it will remember if there is an alarm when you turn the assistant off and on.
-### Changelog v0.1
-- I optimized the code by getting rid of Elif code blocks
-- Added Spotify Playlist function
-- Added Play music from Youtube function
-- I added Greeting Message and giving information about day
-# Niko Voice Asistant
+🔧 Bugs Addressed:
+- 🔍 Resolved occasional inconsistencies with Spotify due to API issues.
 
-![](https://media.discordapp.net/attachments/1009568023289528511/1112100379618971678/9b7296b0-1c81-463f-a8ff-99952051a96f.jpeg?width=200&height=200)
-## Do you want to help?
-- you can help me to develop the project by forking
+🚀 Changelog v0.4:
+- 📈 Enhanced Command Block efficiency for better user experience.
+- 🤫 Reduced and optimized silence durations.
+- 🎯 Introduced a feature ensuring heightened voice command accuracy.
 
-# What is Next?
-- ~~I want add play music from Youtube function~~
-- I want GUI For Niko
-- And much more function
+🌟 Changelog v0.3:
+- 🎶 Introduced a QuickPlay functionality allowing direct song play via voice command (e.g., "play [song name]").
+- 📱 Enabled direct application launch with voice commands (e.g., "open application [application name]").
+- 🌐 Minor command updates and bug fixes enhancing Turkish language support.
+- 🎧 Enabled seamless playback from both user-created and other Spotify playlists.
+- 🌍 Rolled out multi-language support.
 
-### End
+🔥 Changelog v0.2:
+- 💬 Added a feature where Niko Assistant responds when called by name.
+- 🎤 Optimized the listening function for better response times.
+- ⏰ Enhanced the Alarm feature; Niko remembers alarms even after a reboot.
 
-:)
+🎉 Changelog v0.1:
+- 🚀 Streamlined code by removing redundant 'Elif' blocks.
+- 🎵 Introduced Spotify playlist integration.
+- 📺 Rolled out functionality to play music directly from YouTube.
+- 🌅 Added a refreshing greeting message along with daily info updates.
+
+🤖 Niko Voice Assistant
+![Niko Voice Assistant](https://media.discordapp.net/attachments/1009568023289528511/1112100379618971678/9b7296b0-1c81-463f-a8ff-99952051a96f.jpeg?width=200&height=200)
+
+🤝 Want to Contribute?
+- 💡 Support the project's growth by forking and contributing. Join the Niko Community!
+
+🔮 Upcoming Features:
+- 🎥 Incorporating a "Play music from YouTube" function.
+- 🖥 Crafting a GUI for Niko.
+- 🎁 Stay tuned for more exciting functions and updates!
+
+End.
