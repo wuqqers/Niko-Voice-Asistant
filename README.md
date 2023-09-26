@@ -1,7 +1,8 @@
 ### Bugs?
 ~~- Spotify Sometimes won't work perfect because of spotify api~~
 ### Changelog v0.4
-- optimised commands block 
+- optimised commands block
+- optimised silence duration
 ### Changelog v0.3
 - Added a small function to play the song directly by saying its name (example: play (song name))
 - Added a small function to open the application directly by saying its name (example: open application (application name))
