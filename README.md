@@ -31,7 +31,7 @@
 - 💡 Support the project's growth by forking and contributing. Join the Niko Community!
 
 🔮 Upcoming Features:
-- 🎥 Incorporating a "Play music from YouTube" function.
+- 🎥 "Play music from YouTube" function (Already introduced in Changelog v0.1).
 - 🖥 Crafting a GUI for Niko.
 - 🎁 Stay tuned for more exciting functions and updates!
 
