@@ -3,6 +3,7 @@
 ### Changelog v0.4
 - optimised commands block
 - optimised silence duration
+- Added A feature that ensures the accuracy of input.
 ### Changelog v0.3
 - Added a small function to play the song directly by saying its name (example: play (song name))
 - Added a small function to open the application directly by saying its name (example: open application (application name))
