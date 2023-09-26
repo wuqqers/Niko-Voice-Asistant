@@ -829,7 +829,7 @@ def run_assistant():
      else:
         # Find the most similar command
         matched_command = None
-        highest_similarity = 0.3
+        highest_similarity = 0.7
 
         for key in COMMANDS:
             if similar(response, key) > highest_similarity:
@@ -841,7 +841,7 @@ def run_assistant():
         if matched_command:
             # Speak the confirmation prompt
             speak(f"Did you mean {matched_command}? (yes/no): ")
-
+            print(f"Did you mean {matched_command}? (yes/no): ")
             # Listen for the user's response
             second_response = listen().lower()
 
