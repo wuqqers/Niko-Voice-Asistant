@@ -5,7 +5,7 @@
 - 📈 Enhanced Command Block efficiency for better user experience.
 - 🤫 Reduced and optimized silence durations.
 - 🎯 Introduced a feature ensuring heightened voice command accuracy.
-- 🗣️ Fixed Turkish accent response and separated files into en.py and tr.py. 👍
+- 🗣️ Fixed Turkish accent response in tr.py and separated files into en.py and tr.py. 👍
 
 
 🌟 Changelog v0.3:
