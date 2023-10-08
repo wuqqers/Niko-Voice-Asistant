@@ -5,6 +5,8 @@
 - 📈 Enhanced Command Block efficiency for better user experience.
 - 🤫 Reduced and optimized silence durations.
 - 🎯 Introduced a feature ensuring heightened voice command accuracy.
+- 🗣️ Fixed Turkish accent response and separated files into en.py and tr.py. 👍
+
 
 🌟 Changelog v0.3:
 - 🎶 Introduced a QuickPlay functionality allowing direct song play via voice command (e.g., "play [song name]").
