@@ -412,47 +412,6 @@ def set_device_for_spotify():
         is_spotify_opened = False
 
 
-def play_spotify_track(track_name=None):
-    global is_spotify_opened
-    load_names()
-    user_name = get_user_name()
-
-    if is_spotify_opened:
-        if not track_name:
-            speak(user_name + ", Hangi şarkıyı çalmamı istersiniz?")
-            track_name = listen()
-    else:
-        url = "https://open.spotify.com/"
-        if not is_site_opened(url):
-            webbrowser.open(url)
-            is_spotify_opened = True
-            if not track_name:
-                speak(user_name + ", Hangi şarkıyı çalmamı istersiniz?")
-                track_name = listen()
-                if track_name:
-                    play_spotify_track(track_name)
-                    return
-
-    if track_name:
-        results = sp.search(q=track_name, limit=1, type="track")
-        if results["tracks"]["items"]:
-            track_uri = results["tracks"]["items"][0]["uri"]
-            devices = sp.devices()
-            target_device_id = None
-            for device in devices["devices"]:
-                if device["type"] == "Computer":
-                    target_device_id = device["id"]
-                    sp.transfer_playback(device_id=target_device_id, force_play=True)
-                    break
-            if target_device_id:
-                sp.start_playback(device_id=target_device_id, uris=[track_uri])
-                current_track_name = results["tracks"]["items"][0]["name"]
-                speak("Şu anda çalınıyor: " + current_track_name)
-            else:
-                speak("Oynatılacak kullanılabilir cihaz yok.")
-        else:
-            speak("Üzgünüm o şarkıyı bulamadım.")
-
 
 def resume_song():
     sp.start_playback()
@@ -520,7 +479,24 @@ def open_website(website=None):
 
 
 def what_today():
-    speak(f"Bugün {datetime.datetime.now().strftime('%A')}.")
+    # Gün ismini Türkçe olarak almak için bir sözlük kullanabiliriz
+    turkish_days = {
+        "Monday": "Pazartesi",
+        "Tuesday": "Salı",
+        "Wednesday": "Çarşamba",
+        "Thursday": "Perşembe",
+        "Friday": "Cuma",
+        "Saturday": "Cumartesi",
+        "Sunday": "Pazar"
+    }
+
+    # İngilizce gün adını al
+    day = datetime.datetime.now().strftime("%A")
+
+    # Türkçe gün ismini almak için sözlüğü kullan
+    turkish_day = turkish_days.get(day, day)
+
+    speak(f"Bugün {turkish_day}.")
 
 
 def load_alarms():
@@ -685,19 +661,21 @@ def close_application():
         speak(f"Üzgünüm, çalışan {application_name} uygulamasını bulamadım.")
 
 
-def play_song():
-    speak(
-        "Şarkıyı hangi platformdan çalmak istiyorsunuz, YouTube'dan mı yoksa Spotify'dan mı?"
-    )
-    platform = listen().lower()
+def play_song(song_name=None):
+    if not song_name:
+        speak("Hangi şarkıyı çalmak istiyorsunuz?")
+        song_name = listen()
 
-    if platform == "spotify":
-        play_spotify_track()
-    elif platform == "youtube":
-        play_youtube()
-    else:
-        speak("Üzgünüm, platformu anlamadım. Lütfen tekrar deneyin.")
+    if song_name:
+        speak(f"{song_name} şarkısını hangi platformdan çalmak istersiniz, YouTube'dan mı yoksa Spotify'dan mı?")
+        platform = listen().lower()
 
+        if platform == "spotify":
+            play_spotify_track(song_name)
+        elif platform == "youtube":
+            play_youtube(song_name)
+        else:
+            speak("Üzgünüm, platformu anlamadım. Lütfen tekrar deneyin.")
 
 def play_youtube(track_name=None):
     if not track_name:
@@ -724,6 +702,53 @@ def play_youtube(track_name=None):
             speak(
                 "YouTube API anahtarı bulunamadı. Lütfen .env dosyasında API anahtarınızı ayarladığınızdan emin olun."
             )
+
+
+def play_spotify_track(track_name=None):
+    global is_spotify_opened
+    load_names()
+    user_name = get_user_name()
+
+    if is_spotify_opened:
+        if not track_name:
+            speak(user_name + ", Hangi şarkıyı çalmamı istersiniz?")
+            track_name = listen()
+    else:
+        url = "https://open.spotify.com/"
+        if not is_site_opened(url):
+            webbrowser.open(url)
+            is_spotify_opened = True
+            if not track_name:
+                speak(user_name + ", Hangi şarkıyı çalmamı istersiniz?")
+                track_name = listen()
+                if track_name:
+                    play_spotify_track(track_name)
+                    return
+
+    if track_name:
+        results = sp.search(q=track_name, limit=1, type="track")
+        if results["tracks"]["items"]:
+            track_uri = results["tracks"]["items"][0]["uri"]
+            devices = sp.devices()
+            target_device_id = None
+            for device in devices["devices"]:
+                if device["type"] == "Computer":
+                    target_device_id = device["id"]
+                    sp.transfer_playback(device_id=target_device_id, force_play=True)
+                    break
+            if target_device_id:
+                sp.start_playback(device_id=target_device_id, uris=[track_uri])
+                current_track_name = results["tracks"]["items"][0]["name"]
+                speak("Şu anda çalınıyor: " + current_track_name)
+            else:
+                speak("Oynatılacak kullanılabilir cihaz yok.")
+        else:
+            speak("Üzgünüm o şarkıyı bulamadım.")
+
+
+
+
+
 
 
 def get_weather(city=None):
@@ -907,10 +932,26 @@ def run_assistant():
     initialize_engine()
     applications = load_applications()
     user_name = get_user_name()
+
+    # Gün ismini Türkçe olarak almak için bir sözlük kullanabiliriz
+    turkish_days = {
+        "Monday": "Pazartesi",
+        "Tuesday": "Salı",
+        "Wednesday": "Çarşamba",
+        "Thursday": "Perşembe",
+        "Friday": "Cuma",
+        "Saturday": "Cumartesi",
+        "Sunday": "Pazar"
+    }
+
     current_time = datetime.datetime.now().strftime("%H:%M")
     day = datetime.datetime.now().strftime("%A")
+
+    # Türkçe gün ismini almak için sözlüğü kullan
+    turkish_day = turkish_days.get(day, day)
+
     speak(
-        f"Merhaba {user_name}! Bugün {day}. Saat {current_time}, Size Nasıl Yardımcı Olabilirim?"
+        f"Merhaba {user_name}! Bugün {turkish_day}. Saat {current_time}, Size Nasıl Yardımcı Olabilirim?"
     )
 
     assistant_name, user_name = load_names()
